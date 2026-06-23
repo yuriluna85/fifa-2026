@@ -19,17 +19,17 @@ $scriptPath = Join-Path $PSScriptRoot "updater.py"
 Write-Host "[INFO] Caminho do script: $scriptPath" -ForegroundColor Green
 Write-Host ""
 Write-Host "[INFO] Criando tarefa agendada no Windows..."
-Write-Host "[INFO] A tarefa rodará a cada 1 hora para manter os jogos atualizados."
+Write-Host "[INFO] A tarefa rodará a cada 1 minuto para manter os jogos e placares atualizados."
 Write-Host ""
 
-# Create task using schtasks to run hourly
-$taskCommand = 'schtasks /create /tn "Copa2026Memorial" /tr "\"' + $python + '\" \"' + $scriptPath + '\"" /sc hourly /mo 1 /f'
+# Create task using schtasks to run every 1 minute
+$taskCommand = 'schtasks /create /tn "Copa2026Memorial" /tr "\"' + $python + '\" \"' + $scriptPath + '\"" /sc minute /mo 1 /f'
 Invoke-Expression $taskCommand
 
 Write-Host ""
 Write-Host "===================================================" -ForegroundColor Green
 Write-Host "  [SUCESSO] Tarefa 'Copa2026Memorial' criada!" -ForegroundColor Green
-Write-Host "  Ela rodará a cada 1 hora no seu PC para atualizar placares e vídeos." -ForegroundColor Green
+Write-Host "  Ela rodará a cada 1 minuto no seu PC para atualizar placares e vídeos." -ForegroundColor Green
 Write-Host "===================================================" -ForegroundColor Green
 Write-Host ""
 Read-Host "Pressione Enter para fechar..."

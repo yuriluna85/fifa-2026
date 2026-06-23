@@ -121,6 +121,13 @@ def clean_string(s):
     s = s.replace("eua", "estados unidos").replace("usa", "estados unidos")
     return s.strip()
 
+# Extract YouTube 11-char video ID from url
+def extract_video_id(url):
+    if not url:
+        return None
+    match = re.search(r'(?:v=|\/embed\/|\/youtu\.be\/|\/v\/|\/shorts\/|^|be\/)([a-zA-Z0-9_-]{11})', url)
+    return match.group(1) if match else None
+
 # Scrape CazéTV channel videos or streams using ytInitialData JSON
 def get_cazetv_youtube_content(tab="videos"):
     print(f"Scraping CazéTV YouTube tab: '{tab}'...")
@@ -925,19 +932,31 @@ def generate_html(matches):
         
     if live_matches_banner:
         for lm in live_matches_banner:
-            html_content += f"""
-            <div class="live-banner">
-                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                    <div class="live-badge"><i class="fa-solid fa-satellite-dish"></i> Transmissão Ao Vivo</div>
-                    <div class="live-match-teams">
-                        <span>{lm['team_a']}</span>
-                        <span class="live-match-score">{lm['score_a']} x {lm['score_b']}</span>
-                        <span>{lm['team_b']}</span>
-                    </div>
+            video_id = extract_video_id(lm['live_link'])
+            player_html = ""
+            if video_id:
+                player_html = f"""
+                <div class="live-player-container" style="margin-top: 1.5rem; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; border: 1px solid rgba(255, 23, 68, 0.3); box-shadow: 0 10px 25px -10px rgba(255, 23, 68, 0.5);">
+                    <iframe src="https://www.youtube.com/embed/{video_id}?autoplay=1&mute=1" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
                 </div>
-                <a href="{lm['live_link']}" target="_blank" class="live-banner-action">
-                    <i class="fa-brands fa-youtube"></i> Assistir na CazéTV
-                </a>
+                """
+            
+            html_content += f"""
+            <div class="live-banner" style="flex-direction: column; align-items: stretch; gap: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; width: 100%;">
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <div class="live-badge"><i class="fa-solid fa-satellite-dish"></i> Transmissão Ao Vivo</div>
+                        <div class="live-match-teams">
+                            <span>{lm['team_a']}</span>
+                            <span class="live-match-score">{lm['score_a']} x {lm['score_b']}</span>
+                            <span>{lm['team_b']}</span>
+                        </div>
+                    </div>
+                    <a href="{lm['live_link']}" target="_blank" class="live-banner-action">
+                        <i class="fa-brands fa-youtube"></i> Abrir no YouTube
+                    </a>
+                </div>
+                {player_html}
             </div>
             """
             
@@ -1031,9 +1050,18 @@ def generate_html(matches):
             # Buttons HTML
             action_buttons = ""
             if match['status'] == "Ao Vivo":
+                video_id = extract_video_id(match['live_link'])
+                card_player_html = ""
+                if video_id:
+                    card_player_html = f"""
+                    <div class="live-card-player" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 1rem; border: 1px solid rgba(255, 23, 68, 0.2);">
+                        <iframe src="https://www.youtube.com/embed/{video_id}?mute=1" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" frameborder="0" allowfullscreen></iframe>
+                    </div>
+                    """
                 action_buttons = f"""
+                    {card_player_html}
                     <a href="{match['live_link']}" target="_blank" class="btn btn-live">
-                        <i class="fa-brands fa-youtube"></i> Assistir ao Vivo na CazéTV
+                        <i class="fa-brands fa-youtube"></i> Abrir na CazéTV
                     </a>
                 """
             elif match['status'] == "Finalizado":
