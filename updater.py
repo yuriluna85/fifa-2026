@@ -101,7 +101,7 @@ def search_youtube_serper(query):
                     video_id = extract_video_id(link)
                     if video_id:
                         title_clean = clean_string(title)
-                        is_live = "ao vivo" in title_clean or "live" in title_clean or item.get('duration') == 'LIVE'
+                        is_live = item.get('duration') == 'LIVE'
                         
                         print(f"  [Serper Match] Aceito vídeo de CazéTV: '{title}' ({video_id})")
                         videos.append({
@@ -431,10 +431,10 @@ def update_matches():
                 
         elif match['status'] == "Finalizado":
             hl = match.get('highlights_link')
-            if not hl or "MOCK" in hl:
+            if not hl or "MOCK" in hl or "youtube.com/results" in hl:
                 match['highlights_link'] = f"https://www.youtube.com/@CazeTV/search?query={q_team_a}+{q_team_b}+melhores+momentos"
             rp = match.get('replay_link')
-            if not rp or "MOCK" in rp:
+            if not rp or "MOCK" in rp or "youtube.com/results" in rp:
                 match['replay_link'] = f"https://www.youtube.com/@CazeTV/search?query={q_team_a}+{q_team_b}+jogo+completo"
             if match['score_a'] is None:
                 match['score_a'] = 0
@@ -1266,7 +1266,7 @@ def generate_html(matches):
         // Extract YouTube ID from url
         function getYouTubeId(url) {{
             if (!url) return null;
-            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const regExp = /^.*(youtu.be\\/|v\\/|u\\/\\w\\/|embed\\/|watch\\?v=|\\&v=)([^#\\&\\?]*).*/;
             const match = url.match(regExp);
             return (match && match[2].length === 11) ? match[2] : null;
         }}
@@ -1501,7 +1501,7 @@ def generate_html(matches):
                         </div>
                     `;
                 }} else {{
-                    const channelLiveEmbed = "https://www.youtube.com/embed/live_stream?channel=UC4y3RCV7vvy151yUv8dF_Hw&autoplay=1&mute=1";
+                    const channelLiveEmbed = "https://www.youtube.com/embed/live_stream?channel=UC213sW5s_N9wF7oR98_rOsw&autoplay=1&mute=1";
                     playerWrapper.innerHTML = `
                         <div class="live-player-container" style="margin-top: 1.5rem;">
                             <iframe src="${{channelLiveEmbed}}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>

@@ -10,8 +10,8 @@
         "score_a": 2,
         "score_b": 0,
         "live_link": null,
-        "replay_link": "https://www.youtube.com/results?search_query=CazeTV+Brasil+Jap%C3%A3o+jogo+completo",
-        "highlights_link": "https://www.youtube.com/results?search_query=CazeTV+Brasil+Jap%C3%A3o+melhores+momentos"
+        "replay_link": "https://www.youtube.com/@CazeTV/search?query=Brasil+Jap%C3%A3o+jogo+completo",
+        "highlights_link": "https://www.youtube.com/@CazeTV/search?query=Brasil+Jap%C3%A3o+melhores+momentos"
     },
     {
         "id": 2,
@@ -24,8 +24,8 @@
         "score_a": 1,
         "score_b": 2,
         "live_link": null,
-        "replay_link": "https://www.youtube.com/results?search_query=CazeTV+Argentina+Marrocos+jogo+completo",
-        "highlights_link": "https://www.youtube.com/results?search_query=CazeTV+Argentina+Marrocos+melhores+momentos"
+        "replay_link": "https://www.youtube.com/@CazeTV/search?query=Argentina+Marrocos+jogo+completo",
+        "highlights_link": "https://www.youtube.com/@CazeTV/search?query=Argentina+Marrocos+melhores+momentos"
     },
     {
         "id": 3,
@@ -38,7 +38,7 @@
         "score_a": 5,
         "score_b": 0,
         "live_link": null,
-        "replay_link": "https://www.youtube.com/watch?v=L2nnCnVEahg",
+        "replay_link": "https://www.youtube.com/watch?v=yTDgd1SdZJU",
         "highlights_link": "https://www.youtube.com/watch?v=aJva_fZEpRc"
     },
     {
@@ -119,8 +119,8 @@
         "date": "23/06/2026",
         "time": "17:00",
         "status": "Ao Vivo",
-        "score_a": 1,
-        "score_b": 1,
+        "score_a": null,
+        "score_b": null,
         "live_link": "https://www.youtube.com/watch?v=vTnBwT_hN5o",
         "replay_link": null,
         "highlights_link": null
