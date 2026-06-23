@@ -1,5 +1,5 @@
 {
-    "last_updated": "2026-06-23T16:25:47.207815",
+    "last_updated": "2026-06-23T19:42:09.322169",
     "tournament_summary": {
         "total_matches_in_database": 9,
         "matches_finished": 3,
@@ -7,8 +7,8 @@
         "matches_scheduled": 5
     },
     "goals_statistics": {
-        "total_goals_scored": 10,
-        "average_goals_per_match": 2.5,
+        "total_goals_scored": 12,
+        "average_goals_per_match": 3.0,
         "highest_scoring_match": "Portugal 5 x 0 Uzbequistão"
     },
     "cazetv_coverage_metrics": {
