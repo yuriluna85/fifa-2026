@@ -2,8 +2,8 @@ name: Copa 2026 Memorial Updater
 
 on:
   schedule:
-    # Roda a cada hora para capturar novos jogos finalizados ou lives iniciadas
-    - cron: '0 * * * *'
+    # Roda a cada minuto (o GitHub Actions executará na maior frequência possível, que costuma ser de 5 em 5 minutos)
+    - cron: '* * * * *'
   workflow_dispatch: # Permite rodar manualmente pelo painel do GitHub
 
 permissions:
