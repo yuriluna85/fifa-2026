@@ -28,11 +28,14 @@ jobs:
           pip install -r requirements.txt
 
       - name: Executar Atualizador e Indexador da Copa
+        env:
+          SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
+          SCRAPERAPI_KEY: ${{ secrets.SCRAPERAPI_KEY }}
         run: python updater.py
 
       - name: Commit e Push das Atualizações
         run: |
           git config --global user.name "GitHub Action Bot"
           git config --global user.email "actions@github.com"
-          git add index.html matches.json
+          git add index.html matches.json matches_data.csv matches_metrics.json
           git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update: Placar e vídeos da Copa 2026 ($(date +'%d/%m/%Y %H:%M'))" && git push)
