@@ -14,6 +14,105 @@ OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
 MATCHES_FILE = os.path.join(OUTPUT_DIR, "matches.json")
 OUTPUT_FILE = os.path.join(OUTPUT_DIR, "index.html")
 
+# Helper to fetch HTML/content, routing through ScraperAPI if SCRAPERAPI_KEY is available
+def fetch_html(url, timeout=15):
+    scraper_key = os.getenv("SCRAPERAPI_KEY")
+    final_url = url
+    if scraper_key:
+        encoded_url = urllib.parse.quote(url)
+        final_url = f"http://api.scraperapi.com?api_key={scraper_key}&url={encoded_url}"
+        print(f"ScraperAPI: Roteando requisição para {url}")
+        
+    req = urllib.request.Request(
+        final_url,
+        headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            return response.read()
+    except Exception as e:
+        print(f"Erro ao acessar {url} via ScraperAPI/direto: {e}", file=sys.stderr)
+        if scraper_key:
+            print(f"Tentando acesso direto alternativo para {url}...", file=sys.stderr)
+            try:
+                req_direct = urllib.request.Request(
+                    url,
+                    headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+                )
+                with urllib.request.urlopen(req_direct, timeout=timeout) as response:
+                    return response.read()
+            except Exception as ex:
+                print(f"Acesso direto também falhou para {url}: {ex}", file=sys.stderr)
+        raise e
+
+# Load environment variables from .env file if it exists
+def load_env_file():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    paths = [
+        os.path.join(script_dir, ".env"),
+        os.path.join(os.getcwd(), ".env")
+    ]
+    for p in paths:
+        if os.path.exists(p):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith("#") and "=" in line:
+                            parts = line.split("=", 1)
+                            key = parts[0].strip()
+                            value = parts[1].strip().strip('"').strip("'")
+                            os.environ[key] = value
+                print(f"Carregadas variáveis de ambiente de: {p}")
+                return
+            except Exception as e:
+                print(f"Erro ao ler arquivo .env: {e}", file=sys.stderr)
+
+# Search YouTube using Serper API
+def search_youtube_serper(query):
+    api_key = os.getenv("SERPER_API_KEY")
+    if not api_key:
+        return []
+        
+    print(f"Buscando no Serper YouTube por: '{query}'...")
+    url = "https://google.serper.dev/youtube"
+    headers = {
+        'X-API-KEY': api_key,
+        'Content-Type': 'application/json'
+    }
+    data = json.dumps({"q": query}).encode('utf-8')
+    req = urllib.request.Request(url, data=data, headers=headers, method='POST')
+    
+    videos = []
+    try:
+        with urllib.request.urlopen(req, timeout=15) as response:
+            res_data = json.loads(response.read().decode('utf-8'))
+            results = res_data.get('videos', [])
+            for item in results:
+                title = item.get('title')
+                link = item.get('link')
+                if title and link:
+                    video_id = None
+                    if "watch?v=" in link:
+                        video_id = link.split("watch?v=")[1].split("&")[0]
+                    elif "youtu.be/" in link:
+                        video_id = link.split("youtu.be/")[1].split("?")[0]
+                    
+                    if video_id:
+                        title_clean = clean_string(title)
+                        is_live = "ao vivo" in title_clean or "live" in title_clean or item.get('duration') == 'LIVE'
+                        
+                        videos.append({
+                            'video_id': video_id,
+                            'title': title,
+                            'url': f"https://www.youtube.com/watch?v={video_id}",
+                            'is_live': is_live
+                        })
+    except Exception as e:
+        print(f"Erro ao buscar no Serper YouTube: {e}", file=sys.stderr)
+        
+    return videos
+
 # Helper to normalize text (remove accents, lowercase)
 def clean_string(s):
     s = s.lower()
@@ -26,90 +125,83 @@ def clean_string(s):
 def get_cazetv_youtube_content(tab="videos"):
     print(f"Scraping CazéTV YouTube tab: '{tab}'...")
     url = f"https://www.youtube.com/@CazeTV/{tab}"
-    
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7'
-    }
-    
     videos = []
     try:
-        req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req, timeout=15) as response:
-            html = response.read().decode('utf-8')
+        html_bytes = fetch_html(url, timeout=15)
+        html = html_bytes.decode('utf-8')
+        
+        # Find ytInitialData javascript object inside HTML
+        match = re.search(r'ytInitialData\s*=\s*({.*?});', html)
+        if not match:
+            match = re.search(r'window\["ytInitialData"\]\s*=\s*({.*?});', html)
             
-            # Find ytInitialData javascript object inside HTML
-            match = re.search(r'ytInitialData\s*=\s*({.*?});', html)
-            if not match:
-                match = re.search(r'window\["ytInitialData"\]\s*=\s*({.*?});', html)
-                
-            if match:
-                data = json.loads(match.group(1))
-                
-                # Navigate through YouTube page tabs structure to find content
-                tabs = data.get('contents', {}).get('twoColumnBrowseResultsRenderer', {}).get('tabs', [])
-                grid_contents = []
-                
+        if match:
+            data = json.loads(match.group(1))
+            
+            # Navigate through YouTube page tabs structure to find content
+            tabs = data.get('contents', {}).get('twoColumnBrowseResultsRenderer', {}).get('tabs', [])
+            grid_contents = []
+            
+            for t in tabs:
+                tab_renderer = t.get('tabRenderer', {})
+                tab_url = tab_renderer.get('endpoint', {}).get('browseEndpoint', {}).get('canonicalBaseUrl', '')
+                if tab in tab_url or (tab == "videos" and "videos" in tab_url) or (tab == "streams" and "streams" in tab_url):
+                    grid_contents = tab_renderer.get('content', {}).get('richGridRenderer', {}).get('contents', [])
+                    break
+                    
+            if not grid_contents:
+                # Fallback check tab title
                 for t in tabs:
                     tab_renderer = t.get('tabRenderer', {})
-                    tab_url = tab_renderer.get('endpoint', {}).get('browseEndpoint', {}).get('canonicalBaseUrl', '')
-                    if tab in tab_url or (tab == "videos" and "videos" in tab_url) or (tab == "streams" and "streams" in tab_url):
+                    title = tab_renderer.get('title', '').lower()
+                    if (tab == "videos" and "víd" in title) or (tab == "streams" and ("trans" in title or "live" in title or "stream" in title)):
                         grid_contents = tab_renderer.get('content', {}).get('richGridRenderer', {}).get('contents', [])
                         break
                         
-                if not grid_contents:
-                    # Fallback check tab title
-                    for t in tabs:
-                        tab_renderer = t.get('tabRenderer', {})
-                        title = tab_renderer.get('title', '').lower()
-                        if (tab == "videos" and "víd" in title) or (tab == "streams" and ("trans" in title or "live" in title or "stream" in title)):
-                            grid_contents = tab_renderer.get('content', {}).get('richGridRenderer', {}).get('contents', [])
+            for item in grid_contents:
+                rich_item = item.get('richItemRenderer', {})
+                content_node = rich_item.get('content', {})
+                
+                video_id = None
+                title = None
+                is_live = False
+                
+                # Format A: videoRenderer
+                if 'videoRenderer' in content_node:
+                    v_renderer = content_node['videoRenderer']
+                    video_id = v_renderer.get('videoId')
+                    title = v_renderer.get('title', {}).get('runs', [{}])[0].get('text', '')
+                    
+                    thumbnail_overlays = v_renderer.get('thumbnailOverlays', [])
+                    for overlay in thumbnail_overlays:
+                        badge = overlay.get('thumbnailOverlayTimeStatusRenderer', {}).get('style', '')
+                        if badge == 'LIVE':
+                            is_live = True
                             break
                             
-                for item in grid_contents:
-                    rich_item = item.get('richItemRenderer', {})
-                    content_node = rich_item.get('content', {})
+                # Format B: lockupViewModel (modern layout)
+                elif 'lockupViewModel' in content_node:
+                    lockup = content_node['lockupViewModel']
+                    video_id = lockup.get('contentId')
                     
-                    video_id = None
-                    title = None
-                    is_live = False
+                    lmvm = lockup.get('metadata', {}).get('lockupMetadataViewModel', {})
+                    title = lmvm.get('title', {}).get('content', '')
                     
-                    # Format A: videoRenderer
-                    if 'videoRenderer' in content_node:
-                        v_renderer = content_node['videoRenderer']
-                        video_id = v_renderer.get('videoId')
-                        title = v_renderer.get('title', {}).get('runs', [{}])[0].get('text', '')
-                        
-                        thumbnail_overlays = v_renderer.get('thumbnailOverlays', [])
-                        for overlay in thumbnail_overlays:
-                            badge = overlay.get('thumbnailOverlayTimeStatusRenderer', {}).get('style', '')
-                            if badge == 'LIVE':
-                                is_live = True
-                                break
-                                
-                    # Format B: lockupViewModel (modern layout)
-                    elif 'lockupViewModel' in content_node:
-                        lockup = content_node['lockupViewModel']
-                        video_id = lockup.get('contentId')
-                        
-                        lmvm = lockup.get('metadata', {}).get('lockupMetadataViewModel', {})
-                        title = lmvm.get('title', {}).get('content', '')
-                        
-                        # Check if live
-                        overlays = lockup.get('contentImage', {}).get('thumbnailViewModel', {}).get('overlays', [])
-                        for overlay in overlays:
-                            badge = overlay.get('thumbnailOverlayTimeStatusRenderer', {}).get('style', '')
-                            if badge == 'LIVE':
-                                is_live = True
-                                break
-                                
-                    if video_id and title:
-                        videos.append({
-                            'video_id': video_id,
-                            'title': title,
-                            'url': f"https://www.youtube.com/watch?v={video_id}",
-                            'is_live': is_live
-                        })
+                    # Check if live
+                    overlays = lockup.get('contentImage', {}).get('thumbnailViewModel', {}).get('overlays', [])
+                    for overlay in overlays:
+                        badge = overlay.get('thumbnailOverlayTimeStatusRenderer', {}).get('style', '')
+                        if badge == 'LIVE':
+                            is_live = True
+                            break
+                            
+                if video_id and title:
+                    videos.append({
+                        'video_id': video_id,
+                        'title': title,
+                        'url': f"https://www.youtube.com/watch?v={video_id}",
+                        'is_live': is_live
+                    })
     except Exception as e:
         print(f"Error scraping CazéTV {tab}: {e}", file=sys.stderr)
         
@@ -144,12 +236,46 @@ def update_matches():
     with open(MATCHES_FILE, "r", encoding="utf-8") as f:
         matches = json.load(f)
         
-    # Get latest uploads & streams from CazéTV
-    uploads = get_cazetv_youtube_content("videos")
-    streams = get_cazetv_youtube_content("streams")
-    all_videos = uploads + streams
+    # Load environment variables
+    load_env_file()
     
-    print(f"Fetched {len(all_videos)} media items from CazéTV.")
+    api_key = os.getenv("SERPER_API_KEY")
+    all_videos = []
+    
+    # Check if Serper API Key is configured
+    if api_key:
+        print("SERPER_API_KEY encontrada no ambiente. Usando Serper YouTube API como fonte primária.")
+        # Fetch generic channel videos
+        all_videos.extend(search_youtube_serper("CazeTV"))
+        all_videos.extend(search_youtube_serper("CazeTV ao vivo"))
+        
+        # Search specifically for active or finished matches
+        for match in matches:
+            if match['status'] in ["Ao Vivo", "Finalizado"]:
+                team_a = match['team_a']
+                team_b = match['team_b']
+                # Search for "CazeTV [Team A] x [Team B]"
+                match_query = f"CazeTV {team_a} {team_b}"
+                all_videos.extend(search_youtube_serper(match_query))
+    else:
+        print("SERPER_API_KEY não configurada. Usando scraper do canal como fallback.")
+        
+    # Always combine/fallback to scraper to be extra safe
+    try:
+        uploads = get_cazetv_youtube_content("videos")
+        streams = get_cazetv_youtube_content("streams")
+        all_videos.extend(uploads + streams)
+    except Exception as e:
+        print(f"Erro ao rodar scraper: {e}. Usando apenas resultados do Serper se disponíveis.", file=sys.stderr)
+        
+    # Deduplicate videos by video_id
+    unique_videos = {}
+    for v in all_videos:
+        if v['video_id'] not in unique_videos:
+            unique_videos[v['video_id']] = v
+    all_videos = list(unique_videos.values())
+    
+    print(f"Total de {len(all_videos)} vídeos carregados para cruzamento.")
     
     updated_count = 0
     for match in matches:

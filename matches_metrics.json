@@ -1,0 +1,20 @@
+{
+    "last_updated": "2026-06-23T14:45:05.890694",
+    "tournament_summary": {
+        "total_matches_in_database": 8,
+        "matches_finished": 2,
+        "matches_currently_live": 1,
+        "matches_scheduled": 5
+    },
+    "goals_statistics": {
+        "total_goals_scored": 7,
+        "average_goals_per_match": 2.33,
+        "highest_scoring_match": "Argentina 1 x 2 Marrocos"
+    },
+    "cazetv_coverage_metrics": {
+        "highlights_available_count": 2,
+        "highlights_coverage_percentage": "100.0%",
+        "full_replays_available_count": 2,
+        "full_replays_coverage_percentage": "100.0%"
+    }
+}

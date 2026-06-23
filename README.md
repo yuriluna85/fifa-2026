@@ -17,6 +17,8 @@ O projeto possui a seguinte estrutura organizada para deploy e automação cont�
 ├── requirements.txt         # Dependências do Python (beautifulsoup4)
 ├── updater.py               # Script principal (Scraper, Score Parser e Gerador de HTML)
 ├── matches.json             # Banco de dados de partidas e links do YouTube
+├── matches_data.csv         # Arquivo CSV estruturado com placares e links de todos os jogos
+├── matches_metrics.json     # Arquivo JSON contendo métricas do torneio e cobertura da CazéTV
 ├── index.html               # Painel web estático atualizado automaticamente
 └── agendar_copa.ps1         # Script PowerShell de agendamento local horário
 ```
