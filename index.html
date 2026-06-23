@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copa 2026 - Memorial e Transmissões Ao Vivo</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-color: #060913;
+            --card-bg: rgba(16, 23, 38, 0.6);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --accent-gold: #ffb300;
+            --accent-green: #00e676;
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --live-pulse: #ff1744;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(255, 179, 0, 0.08) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(0, 230, 118, 0.05) 0px, transparent 50%);
+            background-attachment: fixed;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            background: linear-gradient(to right, var(--text-primary), var(--accent-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.04em;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .last-update {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 0.5rem 1.2rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
+        }
+
+        .last-update i {
+            color: var(--accent-gold);
+        }
+
+        /* Live Match Banner */
+        .live-banner {
+            background: linear-gradient(135deg, rgba(255, 23, 68, 0.15) 0%, rgba(6, 9, 19, 0.9) 100%);
+            border: 1px solid rgba(255, 23, 68, 0.3);
+            border-radius: 20px;
+            padding: 1.5rem 2rem;
+            margin-bottom: 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 10px 30px -15px rgba(255, 23, 68, 0.3);
+        }
+
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--live-pulse);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            animation: pulse-border 1.5s infinite alternate;
+        }
+
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 0 0 rgba(255, 23, 68, 0.7); }
+            100% { box-shadow: 0 0 0 8px rgba(255, 23, 68, 0); }
+        }
+
+        .live-match-teams {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .live-match-score {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.2rem 0.8rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            color: var(--accent-gold);
+        }
+
+        .live-banner-action {
+            background: #ff1744;
+            color: white;
+            padding: 0.8rem 1.8rem;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(255, 23, 68, 0.4);
+        }
+
+        .live-banner-action:hover {
+            background: #d50000;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 23, 68, 0.5);
+        }
+
+        /* Statistics Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-val {
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-val.live { color: var(--live-pulse); }
+        .stat-val.finished { color: var(--accent-gold); }
+        .stat-val.scheduled { color: var(--text-secondary); }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Control Panel */
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 1rem 1.5rem;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
+            margin-bottom: 2.5rem;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .filter-btn.active {
+            background: var(--accent-gold);
+            border-color: var(--accent-gold);
+            color: #060913;
+            box-shadow: 0 0 15px rgba(255, 179, 0, 0.3);
+        }
+
+        .select-group {
+            background: #0d1222;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .search-box {
+            position: relative;
+            min-width: 250px;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+
+        .search-input {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            padding: 0.6rem 1rem 0.6rem 2.5rem;
+            width: 100%;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent-gold);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        /* Matches Grid */
+        .matches-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .match-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .match-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 179, 0, 0.25);
+            box-shadow: 0 15px 30px -15px rgba(255, 179, 0, 0.15);
+        }
+
+        .match-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 0.5rem;
+        }
+
+        .match-group {
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .match-status-badge {
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            padding: 0.2rem 0.6rem;
+            border-radius: 50px;
+        }
+
+        .match-status-badge.ao-vivo {
+            background: rgba(255, 23, 68, 0.15);
+            color: #ff1744;
+            border: 1px solid rgba(255, 23, 68, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .match-status-badge.ao-vivo i {
+            animation: blink 1s infinite alternate;
+        }
+
+        @keyframes blink {
+            0% { opacity: 0.2; }
+            100% { opacity: 1; }
+        }
+
+        .match-status-badge.finalizado {
+            background: rgba(255, 179, 0, 0.1);
+            color: var(--accent-gold);
+            border: 1px solid rgba(255, 179, 0, 0.2);
+        }
+
+        .match-status-badge.agendado {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        .match-teams-score {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .team-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .team-info {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .team-flag {
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .team-score {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            padding: 0.1rem 0.6rem;
+            border-radius: 6px;
+            min-width: 38px;
+            text-align: center;
+        }
+
+        .team-row.loser {
+            opacity: 0.6;
+        }
+
+        .team-row.loser .team-score {
+            color: var(--text-secondary);
+        }
+
+        /* Actions block */
+        .match-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: auto;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 0.7rem;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-live {
+            background: #ff1744;
+            color: white;
+            border: none;
+            box-shadow: 0 4px 10px rgba(255, 23, 68, 0.3);
+        }
+
+        .btn-live:hover {
+            background: #d50000;
+            transform: translateY(-1px);
+        }
+
+        .btn-highlights {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, #ff8f00 100%);
+            color: #060913;
+            border: none;
+        }
+
+        .btn-highlights:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 179, 0, 0.3);
+        }
+
+        .btn-replay {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-replay:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--text-secondary);
+        }
+
+        .btn-disabled {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px dashed var(--border-color);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 4rem 2rem;
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px dashed var(--border-color);
+            border-radius: 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding-top: 3rem;
+            margin-top: 4rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        footer a {
+            color: var(--accent-gold);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2.2rem; }
+            .controls { flex-direction: column; align-items: stretch; }
+            .search-box { min-width: 100%; }
+            .live-banner { flex-direction: column; text-align: center; }
+            .live-match-teams { font-size: 1.25rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1><i class="fa-solid fa-trophy"></i> Memorial Copa do Mundo 2026</h1>
+            <p class="subtitle">Acompanhe os jogos ao vivo e assista aos melhores momentos das partidas transmitidas pela CazéTV</p>
+            <div class="last-update">
+                <i class="fa-solid fa-arrows-rotate"></i>
+                Atualizado em: <span>23/06/2026 às 14:13:15</span>
+            </div>
+        </header>
+
+        <!-- BANNER DE JOGOS AO VIVO -->
+        
+            <div class="live-banner">
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <div class="live-badge"><i class="fa-solid fa-satellite-dish"></i> Transmissão Ao Vivo</div>
+                    <div class="live-match-teams">
+                        <span>Portugal</span>
+                        <span class="live-match-score">1 x 1</span>
+                        <span>Uzbequistão</span>
+                    </div>
+                </div>
+                <a href="https://www.youtube.com/watch?v=LIVE_MOCK_PT_UZ" target="_blank" class="live-banner-action">
+                    <i class="fa-brands fa-youtube"></i> Assistir na CazéTV
+                </a>
+            </div>
+            
+        <!-- Estatísticas Rápidas -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-val live">1</div>
+                <div class="stat-label">Jogos Ao Vivo</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val finished">2</div>
+                <div class="stat-label">Jogos Finalizados</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val scheduled">5</div>
+                <div class="stat-label">Jogos Agendados</div>
+            </div>
+        </div>
+
+        <!-- Painel de Controle -->
+        <div class="controls">
+            <div class="filter-buttons">
+                <button class="filter-btn active" onclick="filterStatus('all')">Todos os Jogos</button>
+                <button class="filter-btn" onclick="filterStatus('live')"><i class="fa-solid fa-satellite-dish" style="color: #ff1744;"></i> Ao Vivo</button>
+                <button class="filter-btn" onclick="filterStatus('finished')">Finalizados</button>
+                <button class="filter-btn" onclick="filterStatus('scheduled')">Agendados</button>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <select class="select-group" id="group-filter" onchange="filterGroup()">
+                    <option value="all">Todos os Grupos</option>
+                    <option value="Grupo A">Grupo A</option>
+                    <option value="Grupo B">Grupo B</option>
+                    <option value="Grupo C">Grupo C</option>
+                    <option value="Grupo D">Grupo D</option>
+                </select>
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" class="search-input" id="search-input" placeholder="Pesquisar seleção..." oninput="applyFilters()">
+                </div>
+            </div>
+        </div>
+
+        <main>
+            <div class="matches-grid" id="matches-grid">
+    
+                <div class="match-card" data-status="finalizado" data-group="Grupo A" data-team-a="brasil" data-team-b="japão">
+                    <div>
+                        <div class="match-header">
+                            <span class="match-group">Grupo A</span>
+                            <span>22/06/2026</span>
+                            <div class="match-status-badge finalizado">Finalizado</div>
+                        </div>
+                        
+                        <div class="match-teams-score">
+                            <div class="team-row ">
+                                <div class="team-info">
+                                    <span class="team-flag">🇧🇷</span>
+                                    <span>Brasil</span>
+                                </div>
+                                <span class="team-score">2</span>
+                            </div>
+                            <div class="team-row loser">
+                                <div class="team-info">
+                                    <span class="team-flag">🇯🇵</span>
+                                    <span>Japão</span>
+                                </div>
+                                <span class="team-score">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="match-actions">
+                        
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem; width: 100%;">
+                        <a href="https://www.youtube.com/watch?v=HIGHLIGHTS_MOCK_BR_JP" target="_blank" class="btn btn-highlights"><i class="fa-solid fa-circle-play"></i> Melhores Momentos</a>
+                        <a href="https://www.youtube.com/watch?v=REPLAY_MOCK_BR_JP" target="_blank" class="btn btn-replay"><i class="fa-brands fa-youtube"></i> Replay do Jogo</a>
+                    </div>
+                
+                    </div>
+                </div>
+            
+                <div class="match-card" data-status="finalizado" data-group="Grupo A" data-team-a="argentina" data-team-b="marrocos">
+                    <div>
+                        <div class="match-header">
+                            <span class="match-group">Grupo A</span>
+                            <span>22/06/2026</span>
+                            <div class="match-status-badge finalizado">Finalizado</div>
+                        </div>
+                        
+                        <div class="match-teams-score">
+                            <div class="team-row loser">
+                                <div class="team-info">
+                                    <span class="team-flag">🇦🇷</span>
+                                    <span>Argentina</span>
+                                </div>
+                                <span class="team-score">1</span>
+                            </div>
+                            <div class="team-row ">
+                                <div class="team-info">
+                                    <span class="team-flag">🇲🇦</span>
+                                    <span>Marrocos</span>
+                                </div>
+                                <span class="team-score">2</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="match-actions">
+                        
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem; width: 100%;">
+                        <a href="https://www.youtube.com/watch?v=HIGHLIGHTS_MOCK_AR_MA" target="_blank" class="btn btn-highlights"><i class="fa-solid fa-circle-play"></i> Melhores Momentos</a>
+                        <a href="https://www.youtube.com/watch?v=REPLAY_MOCK_AR_MA" target="_blank" class="btn btn-replay"><i class="fa-brands fa-youtube"></i> Replay do Jogo</a>
+                    </div>
+                
+                    </div>
+                </div>
+            
+                <div class="match-card" data-status="ao vivo" data-group="Grupo B" data-team-a="portugal" data-team-b="uzbequistão">
+                    <div>
+                        <div class="match-header">
+                            <span class="match-group">Grupo B</span>
+                            <span>23/06/2026</span>
+                            <div class="match-status-badge ao-vivo"><i class="fa-solid fa-satellite-dish"></i> Ao Vivo</div>
+                        </div>
+                        
+                        <div class="match-teams-score">
+                            <div class="team-row ">
+                                <div class="team-info">
+                                    <span class="team-flag">🇵🇹</span>
+                                    <span>Portugal</span>
+                                </div>
+                                <span class="team-score">1</span>
+                            </div>
+                            <div class="team-row ">
+                                <div class="team-info">
+                                    <span class="team-flag">🇺🇿</span>
+                                    <span>Uzbequistão</span>
+                                </div>
+                                <span class="team-score">1</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="match-actions">
+                        
+                    <a href="https://www.youtube.com/watch?v=LIVE_MOCK_PT_UZ" target="_blank" class="btn btn-live">
+                        <i class="fa-brands fa-youtube"></i> Assistir ao Vivo na CazéTV
+                    </a>
+                
+                    </div>
+                </div>
+            
+                <div class="match-card" data-status="agendado" data-group="Grupo B" data-team-a="frança" data-team-b="estados unidos">
+                    <div>
+                        <div class="match-header">
+                            <span class="match-group">Grupo B</span>
+                            <span>23/06/2026</span>
+                            <div class="match-status-badge agendado">16:00</div>
+                        </div>
+                        
+                        <div class="match-teams-score">
+                            <div class="team-row ">
+                                <div class="team-info">
+                                    <span class="team-flag">🇫🇷</span>
+                                    <span>França</span>
+                                </div>
+                                <span class="team-score">-</span>
+                            </div>
+                            <div class="team-row ">
+                                <div class="team-info">
+                                    <span class="team-flag">🇺🇸</span>
+                                    <span>Estados Unidos</span>
+                                </div>
+                                <span class="team-score">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="match-actions">
+                        
+                    <button class="btn btn-disabled" disabled>
+                        <i class="fa-solid fa-hourglass-start"></i> Aguardando Partida
+                    </button>
+                
+                    </div>
+                </div>
+            
+                <div class="match-card" data-status="agendado" data-group="Grupo C" data-team-a="espanha" data-team-b="austrália">
+                    <div>
+                        <div class="match-header">
+                            <span class="match-group">Grupo C</span>
+                            <span>23/06/2026</span>
+                            <div class="match-status-badge agendado">19:00</div>
+                        </div>
+                        
+                        <div class="match-teams-score">
+                            <div class="team-row ">
+                                <div class="team-info">
+                                    <span class="team-flag">🇪🇸</span>
+                                    <span>Espanha</span>
+                                </div>
+                                <span class="team-score">-</span>
+                            </div>
+                            <div class="team-row ">
+                                <div class="team-info">
+                                    <span class="team-flag">🇦🇺</span>
+                                    <span>Austrália</span>
+                                </div>
+                                <span class="team-score">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="match-actions">
+                        
+                    <button class="btn btn-disabled" disabled>
+                        <i class="fa-solid fa-hourglass-start"></i> Aguardando Partida
+                    </button>
+                
+                    </div>
+                </div>
+            
+                <div class="match-card" data-status="agendado" data-group="Grupo C" data-team-a="alemanha" data-team-b="camarões">
+                    <div>
+                        <div class="match-header">
+                            <span class="match-group">Grupo C</span>
+                            <span>24/06/2026</span>
+                            <div class="match-status-badge agendado">13:00</div>
+                        </div>
+                        
+                        <div class="match-teams-score">
+                            <div class="team-row ">
+                                <div class="team-info">
+                                    <span class="team-flag">🇩🇪</span>
+                                    <span>Alemanha</span>
+                                </div>
+                                <span class="team-score">-</span>
+                            </div>
+                            <div class="team-row ">
+                                <div class="team-info">
+                                    <span class="team-flag">🇨🇲</span>
+                                    <span>Camarões</span>
+                                </div>
+                                <span class="team-score">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="match-actions">
+                        
+                    <button class="btn btn-disabled" disabled>
+                        <i class="fa-solid fa-hourglass-start"></i> Aguardando Partida
+                    </button>
+                
+                    </div>
+                </div>
+            
+                <div class="match-card" data-status="agendado" data-group="Grupo D" data-team-a="itália" data-team-b="méxico">
+                    <div>
+                        <div class="match-header">
+                            <span class="match-group">Grupo D</span>
+                            <span>24/06/2026</span>
+                            <div class="match-status-badge agendado">16:00</div>
+                        </div>
+                        
+                        <div class="match-teams-score">
+                            <div class="team-row ">
+                                <div class="team-info">
+                                    <span class="team-flag">🇮🇹</span>
+                                    <span>Itália</span>
+                                </div>
+                                <span class="team-score">-</span>
+                            </div>
+                            <div class="team-row ">
+                                <div class="team-info">
+                                    <span class="team-flag">🇲🇽</span>
+                                    <span>México</span>
+                                </div>
+                                <span class="team-score">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="match-actions">
+                        
+                    <button class="btn btn-disabled" disabled>
+                        <i class="fa-solid fa-hourglass-start"></i> Aguardando Partida
+                    </button>
+                
+                    </div>
+                </div>
+            
+                <div class="match-card" data-status="agendado" data-group="Grupo D" data-team-a="uruguai" data-team-b="coreia do sul">
+                    <div>
+                        <div class="match-header">
+                            <span class="match-group">Grupo D</span>
+                            <span>24/06/2026</span>
+                            <div class="match-status-badge agendado">19:00</div>
+                        </div>
+                        
+                        <div class="match-teams-score">
+                            <div class="team-row ">
+                                <div class="team-info">
+                                    <span class="team-flag">🇺🇾</span>
+                                    <span>Uruguai</span>
+                                </div>
+                                <span class="team-score">-</span>
+                            </div>
+                            <div class="team-row ">
+                                <div class="team-info">
+                                    <span class="team-flag">🇰🇷</span>
+                                    <span>Coreia do Sul</span>
+                                </div>
+                                <span class="team-score">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="match-actions">
+                        
+                    <button class="btn btn-disabled" disabled>
+                        <i class="fa-solid fa-hourglass-start"></i> Aguardando Partida
+                    </button>
+                
+                    </div>
+                </div>
+            
+            </div>
+        </main>
+
+        <footer>
+            <p>Criado automaticamente pelo Assistente para a Copa do Mundo FIFA 2026.</p>
+            <p>Todos os vídeos e streams integrados são propriedades intelectuais da <a href="https://www.youtube.com/@CazeTV" target="_blank">CazéTV / LiveMode</a>.</p>
+        </footer>
+    </div>
+
+    <script>
+        let currentStatusFilter = 'all';
+        let currentGroupFilter = 'all';
+
+        function filterStatus(status) {
+            currentStatusFilter = status;
+            
+            // Toggle active status button
+            const buttons = document.querySelectorAll('.filter-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            const clickedBtn = Array.from(buttons).find(btn => {
+                const text = btn.textContent.toLowerCase();
+                return (status === 'all' && text.includes('todos')) ||
+                       (status === 'live' && text.includes('ao vivo')) ||
+                       (status === 'finished' && text.includes('finalizados')) ||
+                       (status === 'scheduled' && text.includes('agendados'));
+            });
+            if (clickedBtn) clickedBtn.classList.add('active');
+            
+            applyFilters();
+        }
+
+        function filterGroup() {
+            currentGroupFilter = document.getElementById('group-filter').value;
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const searchQuery = document.getElementById('search-input').value.toLowerCase();
+            const cards = document.querySelectorAll('.match-card');
+
+            cards.forEach(card => {
+                const status = card.getAttribute('data-status');
+                const group = card.getAttribute('data-group');
+                const teamA = card.getAttribute('data-team-a');
+                const teamB = card.getAttribute('data-team-b');
+                
+                // 1. Status Filter
+                let matchStatus = false;
+                if (currentStatusFilter === 'all') {
+                    matchStatus = true;
+                } else if (currentStatusFilter === 'live') {
+                    matchStatus = status === 'ao vivo';
+                } else if (currentStatusFilter === 'finished') {
+                    matchStatus = status === 'finalizado';
+                } else if (currentStatusFilter === 'scheduled') {
+                    matchStatus = status === 'agendado';
+                }
+                
+                // 2. Group Filter
+                let matchGroup = false;
+                if (currentGroupFilter === 'all') {
+                    matchGroup = true;
+                } else {
+                    matchGroup = group === currentGroupFilter;
+                }
+                
+                // 3. Search Filter
+                const matchSearch = teamA.includes(searchQuery) || teamB.includes(searchQuery);
+                
+                // Combine filters
+                if (matchStatus && matchGroup && matchSearch) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
