@@ -1,5 +1,5 @@
 {
-    "last_updated": "2026-06-23T17:15:51.593158",
+    "last_updated": "2026-06-23T20:26:23.596186",
     "tournament_summary": {
         "total_matches_in_database": 20,
         "matches_finished": 18,
@@ -7,8 +7,8 @@
         "matches_scheduled": 1
     },
     "goals_statistics": {
-        "total_goals_scored": 18,
-        "average_goals_per_match": 0.95,
+        "total_goals_scored": 20,
+        "average_goals_per_match": 1.05,
         "highest_scoring_match": "Noruega 3 x 2 Senegal"
     },
     "cazetv_coverage_metrics": {

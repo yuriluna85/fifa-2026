@@ -77,8 +77,8 @@
         "date": "23/06/2026",
         "time": "17:00",
         "status": "Ao Vivo",
-        "score_a": null,
-        "score_b": null,
+        "score_a": 1,
+        "score_b": 1,
         "live_link": "https://www.youtube.com/watch?v=vTnBwT_hN5o",
         "replay_link": null,
         "highlights_link": null
