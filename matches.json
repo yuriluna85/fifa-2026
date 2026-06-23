@@ -6,10 +6,10 @@
         "team_b": "Japão",
         "date": "22/06/2026",
         "time": "16:00",
-        "status": "Finalizado",
+        "status": "Ao Vivo",
         "score_a": 2,
         "score_b": 0,
-        "live_link": null,
+        "live_link": "https://www.youtube.com/watch?v=lCKmb37yEBk",
         "replay_link": "https://www.youtube.com/results?search_query=CazeTV+Brasil+Jap%C3%A3o+jogo+completo",
         "highlights_link": "https://www.youtube.com/results?search_query=CazeTV+Brasil+Jap%C3%A3o+melhores+momentos"
     },
@@ -37,7 +37,7 @@
         "status": "Ao Vivo",
         "score_a": 1,
         "score_b": 1,
-        "live_link": "https://www.youtube.com/watch?v=vTnBwT_hN5o",
+        "live_link": "https://www.youtube.com/watch?v=f1r-eS8WJLs",
         "replay_link": "https://www.youtube.com/watch?v=vTnBwT_hN5o",
         "highlights_link": "https://www.youtube.com/results?search_query=CazeTV+Portugal+Uzbequist%C3%A3o+melhores+momentos"
     },
