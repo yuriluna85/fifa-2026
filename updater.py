@@ -191,11 +191,15 @@ def get_cazetv_youtube_content(tab="videos"):
                     video_id = v_renderer.get('videoId')
                     title = v_renderer.get('title', {}).get('runs', [{}])[0].get('text', '')
                     
+                    is_upcoming = 'upcomingEventData' in v_renderer
                     thumbnail_overlays = v_renderer.get('thumbnailOverlays', [])
                     for overlay in thumbnail_overlays:
                         badge = overlay.get('thumbnailOverlayTimeStatusRenderer', {}).get('style', '')
                         if badge == 'LIVE':
                             is_live = True
+                            break
+                        if badge == 'UPCOMING':
+                            is_upcoming = True
                             break
                         badge_vm = overlay.get('thumbnailOverlayBadgeViewModel', {})
                         badge_style = badge_vm.get('badgeStyle', '') or ''
@@ -208,12 +212,17 @@ def get_cazetv_youtube_content(tab="videos"):
                         for b in badges:
                             b_vm = b.get('thumbnailBadgeViewModel', {})
                             b_style = b_vm.get('badgeStyle', '') or ''
-                            b_text = b_vm.get('text', '') or ''
-                            if 'LIVE' in b_style or b_text == 'AO VIVO' or b_text == 'LIVE':
+                            b_text = (b_vm.get('text', '') or '').lower()
+                            if 'LIVE' in b_style or b_text == 'ao vivo' or b_text == 'live':
                                 is_live = True
                                 break
-                        if is_live:
+                            if 'em breve' in b_text or 'upcoming' in b_text or 'agendado' in b_text:
+                                is_upcoming = True
+                                break
+                        if is_live or is_upcoming:
                             break
+                    if is_upcoming:
+                        continue
                             
                 # Format B: lockupViewModel (modern layout)
                 elif 'lockupViewModel' in content_node:
@@ -223,12 +232,16 @@ def get_cazetv_youtube_content(tab="videos"):
                     lmvm = lockup.get('metadata', {}).get('lockupMetadataViewModel', {})
                     title = lmvm.get('title', {}).get('content', '')
                     
+                    is_upcoming = False
                     # Check if live
                     overlays = lockup.get('contentImage', {}).get('thumbnailViewModel', {}).get('overlays', [])
                     for overlay in overlays:
                         badge = overlay.get('thumbnailOverlayTimeStatusRenderer', {}).get('style', '')
                         if badge == 'LIVE':
                             is_live = True
+                            break
+                        if badge == 'UPCOMING':
+                            is_upcoming = True
                             break
                         badge_vm = overlay.get('thumbnailOverlayBadgeViewModel', {})
                         badge_style = badge_vm.get('badgeStyle', '') or ''
@@ -241,12 +254,17 @@ def get_cazetv_youtube_content(tab="videos"):
                         for b in badges:
                             b_vm = b.get('thumbnailBadgeViewModel', {})
                             b_style = b_vm.get('badgeStyle', '') or ''
-                            b_text = b_vm.get('text', '') or ''
-                            if 'LIVE' in b_style or b_text == 'AO VIVO' or b_text == 'LIVE':
+                            b_text = (b_vm.get('text', '') or '').lower()
+                            if 'LIVE' in b_style or b_text == 'ao vivo' or b_text == 'live':
                                 is_live = True
                                 break
-                        if is_live:
+                            if 'em breve' in b_text or 'upcoming' in b_text or 'agendado' in b_text:
+                                is_upcoming = True
+                                break
+                        if is_live or is_upcoming:
                             break
+                    if is_upcoming:
+                        continue
                             
                 if video_id and title:
                     videos.append({
@@ -1260,7 +1278,13 @@ def generate_html(matches):
             "Portugal": "🇵🇹", "Uzbequistão": "🇺🇿", "França": "🇫🇷", "Estados Unidos": "🇺🇸",
             "Espanha": "🇪🇸", "Austrália": "🇦🇺", "Alemanha": "🇩🇪", "Camarões": "🇨🇲",
             "Itália": "🇮🇹", "México": "🇲🇽", "Uruguai": "🇺🇾", "Coreia do Sul": "🇰🇷",
-            "Inglaterra": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "Gana": "🇬🇭"
+            "Inglaterra": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "Gana": "🇬🇭",
+            "Áustria": "🇦🇹", "Iraque": "🇮🇶", "Noruega": "🇳🇴", "Senegal": "🇸🇳",
+            "Argélia": "🇩🇿", "Jordânia": "🇯🇴", "Panamá": "🇵🇦", "Croácia": "🇭🇷",
+            "Colômbia": "🇨🇴", "RD Congo": "🇨🇩", "Suíça": "🇨🇭", "Canadá": "🇨🇦",
+            "Bósnia e Herzegovina": "🇧🇦", "Catar": "🇶🇦", "Escócia": "🏴󠁧󠁢󠁳󠁣󠁴󠁿", "Haiti": "🇭🇹",
+            "Chéquia": "🇨🇿", "África do Sul": "🇿🇦", "Curaçao": "🇨🇼", "Costa do Marfim": "🇨🇮",
+            "Suécia": "🇸🇪", "Tunísia": "🇹🇳", "Holanda": "🇳🇱", "Turquia": "🇹🇷"
         }};
 
         // Extract YouTube ID from url

@@ -1,10 +1,21 @@
 Match ID,Group,Team A,Team B,Date,Time,Status,Score A,Score B,Live Link,Highlights Link,Replay Link
-1,Grupo A,Brasil,Japão,22/06/2026,16:00,Finalizado,2,0,,https://www.youtube.com/@CazeTV/search?query=Brasil+Jap%C3%A3o+melhores+momentos,https://www.youtube.com/@CazeTV/search?query=Brasil+Jap%C3%A3o+jogo+completo
-2,Grupo A,Argentina,Marrocos,22/06/2026,19:00,Finalizado,1,2,,https://www.youtube.com/@CazeTV/search?query=Argentina+Marrocos+melhores+momentos,https://www.youtube.com/@CazeTV/search?query=Argentina+Marrocos+jogo+completo
-3,Grupo B,Portugal,Uzbequistão,23/06/2026,13:00,Finalizado,5,0,,https://www.youtube.com/watch?v=aJva_fZEpRc,https://www.youtube.com/watch?v=yTDgd1SdZJU
-4,Grupo B,França,Estados Unidos,23/06/2026,16:00,Agendado,,,,,
-5,Grupo C,Espanha,Austrália,23/06/2026,19:00,Agendado,,,,,
-6,Grupo C,Alemanha,Camarões,24/06/2026,13:00,Agendado,,,,,
-7,Grupo D,Itália,México,24/06/2026,16:00,Agendado,,,,,
-8,Grupo D,Uruguai,Coreia do Sul,24/06/2026,19:00,Agendado,,,,,
-9,Grupo L,Inglaterra,Gana,23/06/2026,17:00,Ao Vivo,1,1,https://www.youtube.com/watch?v=vTnBwT_hN5o,,
+1,Grupo J,Argentina,Áustria,22/06/2026,19:00,Finalizado,2,0,,https://www.youtube.com/@CazeTV/search?query=Argentina+%C3%81ustria+melhores+momentos,https://www.youtube.com/watch?v=2HV5a1o5YdQ
+2,Grupo I,França,Iraque,22/06/2026,16:00,Finalizado,3,0,,https://www.youtube.com/@CazeTV/search?query=Fran%C3%A7a+Iraque+melhores+momentos,https://www.youtube.com/watch?v=XT44o1KA7mw
+3,Grupo I,Noruega,Senegal,22/06/2026,13:00,Finalizado,3,2,,https://www.youtube.com/@CazeTV/search?query=Noruega+Senegal+melhores+momentos,https://www.youtube.com/watch?v=9bcHM2QgGA4
+4,Grupo J,Argélia,Jordânia,22/06/2026,16:00,Finalizado,2,1,,https://www.youtube.com/watch?v=nkkfN-kx9_o,https://www.youtube.com/watch?v=rXT9fvHMslg
+5,Grupo K,Portugal,Uzbequistão,23/06/2026,13:00,Finalizado,5,0,,https://www.youtube.com/watch?v=aJva_fZEpRc,https://www.youtube.com/watch?v=yTDgd1SdZJU
+6,Grupo L,Inglaterra,Gana,23/06/2026,17:00,Ao Vivo,,,https://www.youtube.com/watch?v=vTnBwT_hN5o,,
+7,Grupo L,Panamá,Croácia,23/06/2026,20:00,Finalizado,0,0,,https://www.youtube.com/@CazeTV/search?query=Panam%C3%A1+Cro%C3%A1cia+melhores+momentos,https://www.youtube.com/watch?v=WUvxr2xCpjQ
+8,Grupo K,Colômbia,RD Congo,23/06/2026,23:00,Finalizado,0,0,,https://www.youtube.com/@CazeTV/search?query=Col%C3%B4mbia+RD%20Congo+melhores+momentos,https://www.youtube.com/watch?v=o0PHBI9QAdY
+9,Grupo B,Suíça,Canadá,24/06/2026,22:00,Finalizado,0,0,,https://www.youtube.com/@CazeTV/search?query=Su%C3%AD%C3%A7a+Canad%C3%A1+melhores+momentos,https://www.youtube.com/watch?v=ioH5k4ss_tY
+10,Grupo B,Bósnia e Herzegovina,Catar,24/06/2026,19:00,Agendado,,,,,
+11,Grupo C,Brasil,Escócia,24/06/2026,22:00,Finalizado,0,0,,https://www.youtube.com/@CazeTV/search?query=Brasil+Esc%C3%B3cia+melhores+momentos,https://www.youtube.com/watch?v=dxYTTxhgVNU
+12,Grupo C,Marrocos,Haiti,24/06/2026,19:00,Finalizado,0,0,,https://www.youtube.com/@CazeTV/search?query=Marrocos+Haiti+melhores+momentos,https://www.youtube.com/watch?v=Cy-JKocMCf8
+13,Grupo A,Chéquia,México,24/06/2026,22:00,Finalizado,0,0,,https://www.youtube.com/@CazeTV/search?query=Ch%C3%A9quia+M%C3%A9xico+melhores+momentos,https://www.youtube.com/watch?v=D0947hff-G0
+14,Grupo A,África do Sul,Coreia do Sul,24/06/2026,19:00,Finalizado,0,0,,https://www.youtube.com/@CazeTV/search?query=%C3%81frica%20do%20Sul+Coreia%20do%20Sul+melhores+momentos,https://www.youtube.com/watch?v=cFu_iI4h1to
+15,Grupo E,Curaçao,Costa do Marfim,25/06/2026,16:00,Finalizado,0,0,,https://www.youtube.com/@CazeTV/search?query=Cura%C3%A7ao+Costa%20do%20Marfim+melhores+momentos,https://www.youtube.com/watch?v=yiq5VPpo34U
+16,Grupo E,Equador,Alemanha,25/06/2026,16:00,Finalizado,0,0,,https://www.youtube.com/@CazeTV/search?query=Equador+Alemanha+melhores+momentos,https://www.youtube.com/watch?v=DeIPppohrnQ
+17,Grupo F,Japão,Suécia,25/06/2026,19:00,Finalizado,0,0,,https://www.youtube.com/@CazeTV/search?query=Jap%C3%A3o+Su%C3%A9cia+melhores+momentos,https://www.youtube.com/watch?v=qCcrzzz3bVk
+18,Grupo F,Tunísia,Holanda,25/06/2026,19:00,Finalizado,0,0,,https://www.youtube.com/@CazeTV/search?query=Tun%C3%ADsia+Holanda+melhores+momentos,https://www.youtube.com/watch?v=meWCRh7LE-0
+19,Grupo D,Turquia,Estados Unidos,25/06/2026,22:00,Finalizado,0,0,,https://www.youtube.com/@CazeTV/search?query=Turquia+Estados%20Unidos+melhores+momentos,https://www.youtube.com/watch?v=cAl4PErpiuE
+20,Grupo D,Paraguai,Austrália,25/06/2026,22:00,Finalizado,0,0,,https://www.youtube.com/@CazeTV/search?query=Paraguai+Austr%C3%A1lia+melhores+momentos,https://www.youtube.com/watch?v=YUNznGUccxc
