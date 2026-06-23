@@ -14,3 +14,7 @@ venv/
 Thumbs.db
 Desktop.ini
 desktop.ini
+
+# Environment variables
+.env
+

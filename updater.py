@@ -17,33 +17,33 @@ OUTPUT_FILE = os.path.join(OUTPUT_DIR, "index.html")
 # Helper to fetch HTML/content, routing through ScraperAPI if SCRAPERAPI_KEY is available
 def fetch_html(url, timeout=15):
     scraper_key = os.getenv("SCRAPERAPI_KEY")
-    final_url = url
-    if scraper_key:
-        encoded_url = urllib.parse.quote(url)
-        final_url = f"http://api.scraperapi.com?api_key={scraper_key}&url={encoded_url}"
-        print(f"ScraperAPI: Roteando requisição para {url}")
-        
-    req = urllib.request.Request(
-        final_url,
+    
+    # Try direct access first
+    req_direct = urllib.request.Request(
+        url,
         headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
     )
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as response:
+        print(f"Acessando diretamente: {url}")
+        with urllib.request.urlopen(req_direct, timeout=timeout) as response:
             return response.read()
     except Exception as e:
-        print(f"Erro ao acessar {url} via ScraperAPI/direto: {e}", file=sys.stderr)
+        print(f"Acesso direto falhou para {url}: {e}", file=sys.stderr)
         if scraper_key:
-            print(f"Tentando acesso direto alternativo para {url}...", file=sys.stderr)
+            print(f"Tentando ScraperAPI como fallback para {url}...", file=sys.stderr)
+            encoded_url = urllib.parse.quote(url)
+            final_url = f"http://api.scraperapi.com?api_key={scraper_key}&url={encoded_url}"
+            req_scraper = urllib.request.Request(
+                final_url,
+                headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+            )
             try:
-                req_direct = urllib.request.Request(
-                    url,
-                    headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
-                )
-                with urllib.request.urlopen(req_direct, timeout=timeout) as response:
+                with urllib.request.urlopen(req_scraper, timeout=timeout) as response:
                     return response.read()
             except Exception as ex:
-                print(f"Acesso direto também falhou para {url}: {ex}", file=sys.stderr)
+                print(f"Fallback ScraperAPI também falhou para {url}: {ex}", file=sys.stderr)
         raise e
+
 
 # Load environment variables from .env file if it exists
 def load_env_file():
@@ -91,12 +91,19 @@ def search_youtube_serper(query):
             for item in results:
                 title = item.get('title')
                 link = item.get('link')
+                channel = item.get('channel', '') or ''
                 if title and link:
+                    channel_clean = clean_string(channel)
+                    if 'caze' not in channel_clean:
+                        print(f"  [Serper Filter] Rejeitado canal '{channel}': '{title}'")
+                        continue
+                    
                     video_id = extract_video_id(link)
                     if video_id:
                         title_clean = clean_string(title)
                         is_live = "ao vivo" in title_clean or "live" in title_clean or item.get('duration') == 'LIVE'
                         
+                        print(f"  [Serper Match] Aceito vídeo de CazéTV: '{title}' ({video_id})")
                         videos.append({
                             'video_id': video_id,
                             'title': title,
@@ -120,8 +127,11 @@ def clean_string(s):
 def extract_video_id(url):
     if not url:
         return None
-    match = re.search(r'(?:v=|\/embed\/|\/youtu\.be\/|\/v\/|\/shorts\/|^|be\/)([a-zA-Z0-9_-]{11})', url)
+    if "youtube.com" not in url and "youtu.be" not in url and "youtube-nocookie.com" not in url:
+        return None
+    match = re.search(r'(?:v=|\/embed\/|\/youtu\.be\/|\/v\/|\/shorts\/)([a-zA-Z0-9_-]{11})', url)
     return match.group(1) if match else None
+
 
 # Scrape CazéTV channel videos or streams using ytInitialData JSON
 def get_cazetv_youtube_content(tab="videos"):
@@ -336,8 +346,15 @@ def update_matches():
         for v in live_videos:
             title_clean = clean_string(v['title'])
             if a_clean in title_clean and b_clean in title_clean:
-                live_video = v
-                break
+                if not live_video:
+                    live_video = v
+                else:
+                    # If the already selected video is pre-game/esquenta but this one is not, prefer this one
+                    current_is_pre = any(x in clean_string(live_video['title']) for x in ["pre-jogo", "pre jogo", "esquenta"])
+                    new_is_pre = any(x in title_clean for x in ["pre-jogo", "pre jogo", "esquenta"])
+                    if current_is_pre and not new_is_pre:
+                        live_video = v
+
                     
         if live_video:
             # Match is currently streaming live!
@@ -415,10 +432,10 @@ def update_matches():
         elif match['status'] == "Finalizado":
             hl = match.get('highlights_link')
             if not hl or "MOCK" in hl:
-                match['highlights_link'] = f"https://www.youtube.com/results?search_query=CazeTV+{q_team_a}+{q_team_b}+melhores+momentos"
+                match['highlights_link'] = f"https://www.youtube.com/@CazeTV/search?query={q_team_a}+{q_team_b}+melhores+momentos"
             rp = match.get('replay_link')
             if not rp or "MOCK" in rp:
-                match['replay_link'] = f"https://www.youtube.com/results?search_query=CazeTV+{q_team_a}+{q_team_b}+jogo+completo"
+                match['replay_link'] = f"https://www.youtube.com/@CazeTV/search?query={q_team_a}+{q_team_b}+jogo+completo"
             if match['score_a'] is None:
                 match['score_a'] = 0
                 match['score_b'] = 0
@@ -437,6 +454,7 @@ def update_matches():
     return matches
 
 # Generate Dashboard HTML
+# Generate Dashboard HTML
 def generate_html(matches):
     now_str = datetime.now().strftime("%d/%m/%Y às %H:%M:%S")
     
@@ -445,36 +463,45 @@ def generate_html(matches):
     finished_count = sum(1 for m in matches if m['status'] == "Finalizado")
     scheduled_count = sum(1 for m in matches if m['status'] == "Agendado")
     
-    # Identify any active live matches for banner
-    live_matches_banner = []
-    for m in matches:
-        if m['status'] == "Ao Vivo":
-            live_matches_banner.append(m)
-            
+    # Get all unique groups in matches, sorted
+    unique_groups = sorted(list(set(m['group'] for m in matches if m.get('group'))))
+    group_options_html = '<option value="all">Todos os Grupos</option>\\n'
+    for g in unique_groups:
+        group_options_html += f'                    <option value="{g}">{g}</option>\\n'
+        
+    json_data_embedded = json.dumps(matches, ensure_ascii=False)
+
     # HTML contents template
     html_content = f"""<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Copa 2026 - Memorial e Transmissões Ao Vivo</title>
+    <title>Copa 2026 - Memorial e Transmissões CazéTV</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     
     <style>
         :root {{
-            --bg-color: #060913;
-            --card-bg: rgba(16, 23, 38, 0.6);
-            --border-color: rgba(255, 255, 255, 0.08);
-            --accent-gold: #ffb300;
-            --accent-green: #00e676;
+            --bg-color: #05070f;
+            --surface-bg: rgba(13, 18, 33, 0.45);
+            --surface-border: rgba(255, 255, 255, 0.06);
+            --accent-gold: hsl(43, 100%, 50%);
+            --accent-gold-hover: hsl(43, 100%, 45%);
+            --accent-gold-glow: rgba(255, 179, 0, 0.15);
+            --accent-red: hsl(348, 100%, 50%);
+            --accent-red-hover: hsl(348, 100%, 45%);
+            --accent-red-glow: rgba(255, 23, 68, 0.25);
+            --accent-blue: hsl(198, 100%, 50%);
+            --accent-green: hsl(145, 100%, 45%);
+            
             --text-primary: #f3f4f6;
             --text-secondary: #9ca3af;
-            --live-pulse: #ff1744;
+            --text-muted: #6b7280;
         }}
 
         * {{
@@ -489,10 +516,12 @@ def generate_html(matches):
             font-family: 'Outfit', sans-serif;
             min-height: 100vh;
             background-image: 
-                radial-gradient(at 0% 0%, rgba(255, 179, 0, 0.08) 0px, transparent 50%),
-                radial-gradient(at 100% 0%, rgba(0, 230, 118, 0.05) 0px, transparent 50%);
+                radial-gradient(at 0% 0%, rgba(255, 179, 0, 0.07) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(0, 230, 118, 0.04) 0px, transparent 50%),
+                radial-gradient(at 50% 100%, rgba(56, 189, 248, 0.05) 0px, transparent 50%);
             background-attachment: fixed;
             padding: 2rem 1rem;
+            overflow-y: scroll;
         }}
 
         .container {{
@@ -503,25 +532,38 @@ def generate_html(matches):
         header {{
             text-align: center;
             margin-bottom: 2.5rem;
+            position: relative;
         }}
 
         h1 {{
-            font-size: 3rem;
+            font-size: 3.2rem;
             font-weight: 900;
-            background: linear-gradient(to right, var(--text-primary), var(--accent-gold));
+            background: linear-gradient(135deg, #ffffff 30%, var(--accent-gold) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 0.5rem;
             letter-spacing: -0.04em;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.8rem;
         }}
 
         .subtitle {{
             color: var(--text-secondary);
             font-size: 1.2rem;
             margin-bottom: 1.5rem;
+            font-weight: 300;
         }}
 
-        .last-update {{
+        .header-meta {{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }}
+
+        .last-update, .sync-status {{
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
@@ -530,7 +572,7 @@ def generate_html(matches):
             border-radius: 50px;
             font-size: 0.85rem;
             color: var(--text-secondary);
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--surface-border);
             backdrop-filter: blur(10px);
         }}
 
@@ -538,110 +580,163 @@ def generate_html(matches):
             color: var(--accent-gold);
         }}
 
+        .sync-status i {{
+            color: var(--accent-green);
+        }}
+
+        .sync-status.loading i {{
+            animation: spin 1s linear infinite;
+            color: var(--accent-blue);
+        }}
+
+        @keyframes spin {{
+            100% {{ transform: rotate(360deg); }}
+        }}
+
         /* Live Match Banner */
-        .live-banner {{
-            background: linear-gradient(135deg, rgba(255, 23, 68, 0.15) 0%, rgba(6, 9, 19, 0.9) 100%);
-            border: 1px solid rgba(255, 23, 68, 0.3);
-            border-radius: 20px;
-            padding: 1.5rem 2rem;
+        .live-banners-section {{
             margin-bottom: 2.5rem;
+        }}
+
+        .live-banner {{
+            background: linear-gradient(135deg, rgba(255, 23, 68, 0.1) 0%, rgba(13, 18, 33, 0.7) 100%);
+            border: 1px solid rgba(255, 23, 68, 0.25);
+            border-radius: 24px;
+            padding: 1.8rem;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 20px 40px -20px rgba(255, 23, 68, 0.15);
+            transition: all 0.3s ease;
+        }}
+
+        .live-banner-header {{
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
             gap: 1.5rem;
-            backdrop-filter: blur(15px);
-            box-shadow: 0 10px 30px -15px rgba(255, 23, 68, 0.3);
+            margin-bottom: 1.5rem;
         }}
 
         .live-badge {{
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            background: var(--live-pulse);
+            background: var(--accent-red);
             color: white;
-            padding: 0.3rem 0.8rem;
+            padding: 0.4rem 1rem;
             border-radius: 50px;
             font-weight: 700;
             font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            animation: pulse-border 1.5s infinite alternate;
+            box-shadow: 0 0 15px rgba(255, 23, 68, 0.4);
+            animation: pulse-badge 1.5s infinite alternate;
         }}
 
-        @keyframes pulse-border {{
-            0% {{ box-shadow: 0 0 0 0 rgba(255, 23, 68, 0.7); }}
-            100% {{ box-shadow: 0 0 0 8px rgba(255, 23, 68, 0); }}
+        @keyframes pulse-badge {{
+            0% {{ box-shadow: 0 0 0 0 rgba(255, 23, 68, 0.5); }}
+            100% {{ box-shadow: 0 0 12px 6px rgba(255, 23, 68, 0.1); }}
         }}
 
         .live-match-teams {{
-            font-size: 1.5rem;
-            font-weight: 700;
+            font-size: 1.6rem;
+            font-weight: 800;
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: 1.2rem;
+            letter-spacing: -0.02em;
         }}
 
         .live-match-score {{
-            background: rgba(255, 255, 255, 0.05);
-            padding: 0.2rem 0.8rem;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
+            background: rgba(0, 0, 0, 0.4);
+            padding: 0.2rem 1rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
             color: var(--accent-gold);
+            font-size: 1.8rem;
+            font-weight: 900;
+            font-variant-numeric: tabular-nums;
         }}
 
         .live-banner-action {{
-            background: #ff1744;
+            background: var(--accent-red);
             color: white;
             padding: 0.8rem 1.8rem;
-            border-radius: 10px;
+            border-radius: 12px;
             text-decoration: none;
             font-weight: 700;
             display: inline-flex;
             align-items: center;
             gap: 0.6rem;
             transition: all 0.2s ease;
-            box-shadow: 0 4px 15px rgba(255, 23, 68, 0.4);
+            box-shadow: 0 4px 15px rgba(255, 23, 68, 0.3);
         }}
 
         .live-banner-action:hover {{
-            background: #d50000;
+            background: var(--accent-red-hover);
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 23, 68, 0.5);
+            box-shadow: 0 6px 20px rgba(255, 23, 68, 0.4);
+        }}
+
+        .live-player-container {{
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+            background: #000;
+        }}
+
+        .live-player-container iframe {{
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
         }}
 
         /* Statistics Cards */
         .stats-grid {{
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 1rem;
+            gap: 1.25rem;
             margin-bottom: 2.5rem;
         }}
 
         .stat-card {{
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
+            background: var(--surface-bg);
+            border: 1px solid var(--surface-border);
+            border-radius: 20px;
             padding: 1.5rem;
             text-align: center;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(12px);
+            transition: all 0.3s ease;
+        }}
+
+        .stat-card:hover {{
+            border-color: rgba(255, 255, 255, 0.12);
+            transform: translateY(-2px);
         }}
 
         .stat-val {{
-            font-size: 2.5rem;
+            font-size: 2.8rem;
             font-weight: 900;
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.2rem;
+            line-height: 1.1;
         }}
 
-        .stat-val.live {{ color: var(--live-pulse); }}
-        .stat-val.finished {{ color: var(--accent-gold); }}
-        .stat-val.scheduled {{ color: var(--text-secondary); }}
+        .stat-val.live {{ color: var(--accent-red); text-shadow: 0 0 15px rgba(255, 23, 68, 0.2); }}
+        .stat-val.finished {{ color: var(--accent-gold); text-shadow: 0 0 15px rgba(255, 179, 0, 0.15); }}
+        .stat-val.scheduled {{ color: var(--accent-blue); }}
 
         .stat-label {{
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: var(--text-secondary);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.08em;
+            font-weight: 600;
         }}
 
         /* Control Panel */
@@ -650,56 +745,68 @@ def generate_html(matches):
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 1rem;
-            background: rgba(255, 255, 255, 0.02);
-            padding: 1rem 1.5rem;
-            border-radius: 16px;
-            border: 1px solid var(--border-color);
-            backdrop-filter: blur(10px);
+            gap: 1.25rem;
+            background: rgba(255, 255, 255, 0.015);
+            padding: 1.2rem 1.8rem;
+            border-radius: 20px;
+            border: 1px solid var(--surface-border);
+            backdrop-filter: blur(12px);
             margin-bottom: 2.5rem;
         }}
 
         .filter-buttons {{
             display: flex;
-            gap: 0.5rem;
+            gap: 0.6rem;
             flex-wrap: wrap;
         }}
 
         .filter-btn {{
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--surface-border);
             color: var(--text-primary);
-            padding: 0.6rem 1.2rem;
-            border-radius: 8px;
+            padding: 0.6rem 1.4rem;
+            border-radius: 10px;
             cursor: pointer;
             font-family: inherit;
             font-weight: 600;
             font-size: 0.9rem;
             transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
         }}
 
         .filter-btn:hover {{
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.07);
             transform: translateY(-1px);
         }}
 
         .filter-btn.active {{
             background: var(--accent-gold);
             border-color: var(--accent-gold);
-            color: #060913;
-            box-shadow: 0 0 15px rgba(255, 179, 0, 0.3);
+            color: #05070f;
+            box-shadow: 0 0 15px var(--accent-gold-glow);
+        }}
+
+        .filter-btn.active:hover {{
+            background: var(--accent-gold-hover);
         }}
 
         .select-group {{
-            background: #0d1222;
-            border: 1px solid var(--border-color);
+            background: #090e1a;
+            border: 1px solid var(--surface-border);
             color: var(--text-primary);
-            padding: 0.6rem 1.2rem;
-            border-radius: 8px;
+            padding: 0.6rem 1.4rem;
+            border-radius: 10px;
             font-family: inherit;
             font-weight: 600;
             cursor: pointer;
             outline: none;
+            transition: all 0.2s ease;
+        }}
+
+        .select-group:focus {{
+            border-color: var(--accent-gold);
         }}
 
         .search-box {{
@@ -709,53 +816,82 @@ def generate_html(matches):
 
         .search-box i {{
             position: absolute;
-            left: 1rem;
+            left: 1.1rem;
             top: 50%;
             transform: translateY(-50%);
-            color: var(--text-secondary);
+            color: var(--text-muted);
+            font-size: 0.95rem;
         }}
 
         .search-input {{
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--surface-border);
+            border-radius: 10px;
             color: var(--text-primary);
-            padding: 0.6rem 1rem 0.6rem 2.5rem;
+            padding: 0.65rem 1rem 0.65rem 2.7rem;
             width: 100%;
             font-family: inherit;
             outline: none;
             transition: all 0.2s ease;
+            font-size: 0.9rem;
         }}
 
         .search-input:focus {{
             border-color: var(--accent-gold);
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.06);
+            box-shadow: 0 0 12px rgba(255, 179, 0, 0.08);
         }}
 
         /* Matches Grid */
         .matches-grid {{
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
             gap: 1.5rem;
             margin-bottom: 3rem;
         }}
 
         .match-card {{
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            padding: 1.5rem;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: var(--surface-bg);
+            border: 1px solid var(--surface-border);
+            border-radius: 24px;
+            padding: 1.6rem;
+            backdrop-filter: blur(12px);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }}
+
+        .match-card::before {{
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: transparent;
+            transition: all 0.3s ease;
         }}
 
         .match-card:hover {{
-            transform: translateY(-5px);
-            border-color: rgba(255, 179, 0, 0.25);
-            box-shadow: 0 15px 30px -15px rgba(255, 179, 0, 0.15);
+            transform: translateY(-6px);
+            border-color: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 20px 30px -15px rgba(0, 0, 0, 0.3);
+        }}
+
+        .match-card[data-status-card="ao-vivo"]::before {{
+            background: var(--accent-red);
+        }}
+
+        .match-card[data-status-card="ao-vivo"] {{
+            border-color: rgba(255, 23, 68, 0.2);
+            box-shadow: 0 10px 20px -10px rgba(255, 23, 68, 0.1);
+        }}
+
+        .match-card[data-status-card="finalizado"]::before {{
+            background: var(--accent-gold);
         }}
 
         .match-header {{
@@ -765,214 +901,279 @@ def generate_html(matches):
             font-size: 0.85rem;
             color: var(--text-secondary);
             margin-bottom: 1.2rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            padding-bottom: 0.6rem;
         }}
 
         .match-group {{
-            font-weight: 600;
+            font-weight: 700;
             background: rgba(255, 255, 255, 0.05);
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: var(--text-primary);
         }}
 
         .match-status-badge {{
-            font-weight: 700;
-            font-size: 0.75rem;
+            font-weight: 800;
+            font-size: 0.72rem;
             text-transform: uppercase;
-            padding: 0.2rem 0.6rem;
+            padding: 0.25rem 0.7rem;
             border-radius: 50px;
-        }}
-
-        .match-status-badge.ao-vivo {{
-            background: rgba(255, 23, 68, 0.15);
-            color: #ff1744;
-            border: 1px solid rgba(255, 23, 68, 0.3);
-            display: flex;
+            letter-spacing: 0.03em;
+            display: inline-flex;
             align-items: center;
             gap: 0.3rem;
         }}
 
-        .match-status-badge.ao-vivo i {{
-            animation: blink 1s infinite alternate;
+        .match-status-badge.ao-vivo {{
+            background: rgba(255, 23, 68, 0.12);
+            color: var(--accent-red);
+            border: 1px solid rgba(255, 23, 68, 0.2);
         }}
 
-        @keyframes blink {{
-            0% {{ opacity: 0.2; }}
+        .match-status-badge.ao-vivo i {{
+            animation: pulse-red-dot 1s infinite alternate;
+        }}
+
+        @keyframes pulse-red-dot {{
+            0% {{ opacity: 0.3; }}
             100% {{ opacity: 1; }}
         }}
 
         .match-status-badge.finalizado {{
-            background: rgba(255, 179, 0, 0.1);
+            background: rgba(255, 179, 0, 0.08);
             color: var(--accent-gold);
-            border: 1px solid rgba(255, 179, 0, 0.2);
+            border: 1px solid rgba(255, 179, 0, 0.18);
         }}
 
         .match-status-badge.agendado {{
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.04);
             color: var(--text-secondary);
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--surface-border);
+        }}
+
+        .match-status-badge.agendado-hoje {{
+            background: rgba(56, 189, 248, 0.08);
+            color: var(--accent-blue);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }}
+
+        .match-status-badge.agendado-em-breve {{
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent-blue);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.1);
+        }}
+
+        .match-status-badge.agendado-decorrendo {{
+            background: rgba(255, 179, 0, 0.1);
+            color: var(--accent-gold);
+            border: 1px solid rgba(255, 179, 0, 0.25);
+            animation: pulse-gold-border 1.5s infinite alternate;
+        }}
+
+        @keyframes pulse-gold-border {{
+            0% {{ border-color: rgba(255, 179, 0, 0.2); }}
+            100% {{ border-color: rgba(255, 179, 0, 0.6); }}
         }}
 
         .match-teams-score {{
             display: flex;
             flex-direction: column;
-            gap: 0.8rem;
-            margin-bottom: 1.5rem;
+            gap: 0.9rem;
+            margin-bottom: 1.6rem;
         }}
 
         .team-row {{
             display: flex;
             justify-content: space-between;
             align-items: center;
+            transition: opacity 0.2s ease;
         }}
 
         .team-info {{
             display: flex;
             align-items: center;
-            gap: 0.8rem;
-            font-size: 1.25rem;
+            gap: 0.9rem;
+            font-size: 1.28rem;
             font-weight: 700;
+            letter-spacing: -0.01em;
         }}
 
         .team-flag {{
-            width: 32px;
-            height: 32px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border-color);
+            width: 34px;
+            height: 34px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--surface-border);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.1rem;
+            font-size: 1.25rem;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         }}
 
         .team-score {{
-            font-size: 1.5rem;
+            font-size: 1.6rem;
             font-weight: 800;
             color: var(--text-primary);
             background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border-color);
-            padding: 0.1rem 0.6rem;
-            border-radius: 6px;
-            min-width: 38px;
+            border: 1px solid var(--surface-border);
+            padding: 0.15rem 0.75rem;
+            border-radius: 8px;
+            min-width: 44px;
             text-align: center;
+            font-variant-numeric: tabular-nums;
         }}
 
         .team-row.loser {{
-            opacity: 0.6;
+            opacity: 0.45;
         }}
 
         .team-row.loser .team-score {{
             color: var(--text-secondary);
+            background: transparent;
+            border-style: dashed;
         }}
 
         /* Actions block */
         .match-actions {{
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 0.6rem;
             margin-top: auto;
         }}
 
         .btn {{
             width: 100%;
-            padding: 0.7rem;
-            border-radius: 10px;
+            padding: 0.75rem;
+            border-radius: 12px;
             text-align: center;
             font-weight: 700;
-            font-size: 0.9rem;
+            font-size: 0.92rem;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            outline: none;
         }}
 
         .btn-live {{
-            background: #ff1744;
+            background: var(--accent-red);
             color: white;
-            border: none;
-            box-shadow: 0 4px 10px rgba(255, 23, 68, 0.3);
+            box-shadow: 0 4px 12px var(--accent-red-glow);
         }}
 
         .btn-live:hover {{
-            background: #d50000;
-            transform: translateY(-1px);
+            background: var(--accent-red-hover);
+            transform: translateY(-1.5px);
+            box-shadow: 0 6px 16px rgba(255, 23, 68, 0.4);
+        }}
+
+        .btn-watch-now {{
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }}
+
+        .btn-watch-now:hover {{
+            background: rgba(255, 255, 255, 0.14);
+            transform: translateY(-1.5px);
         }}
 
         .btn-highlights {{
             background: linear-gradient(135deg, var(--accent-gold) 0%, #ff8f00 100%);
-            color: #060913;
-            border: none;
+            color: #05070f;
+            box-shadow: 0 4px 12px var(--accent-gold-glow);
         }}
 
         .btn-highlights:hover {{
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(255, 179, 0, 0.3);
+            transform: translateY(-1.5px);
+            box-shadow: 0 6px 16px rgba(255, 179, 0, 0.35);
         }}
 
         .btn-replay {{
             background: transparent;
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--surface-border);
             color: var(--text-primary);
         }}
 
         .btn-replay:hover {{
             background: rgba(255, 255, 255, 0.05);
             border-color: var(--text-secondary);
+            transform: translateY(-1px);
         }}
 
         .btn-disabled {{
             background: rgba(255, 255, 255, 0.02);
-            border: 1px dashed var(--border-color);
-            color: var(--text-secondary);
+            border: 1px dashed var(--surface-border);
+            color: var(--text-muted);
             cursor: not-allowed;
         }}
 
         .empty-state {{
             grid-column: 1 / -1;
             text-align: center;
-            padding: 4rem 2rem;
-            background: rgba(255, 255, 255, 0.01);
-            border: 1px dashed var(--border-color);
-            border-radius: 20px;
+            padding: 5rem 2rem;
+            background: rgba(255, 255, 255, 0.015);
+            border: 1px dashed var(--surface-border);
+            border-radius: 24px;
             color: var(--text-secondary);
+            backdrop-filter: blur(12px);
         }}
 
         .empty-state i {{
-            font-size: 3rem;
-            margin-bottom: 1rem;
+            font-size: 3.5rem;
+            color: var(--text-muted);
+            margin-bottom: 1.2rem;
+        }}
+
+        .empty-state p {{
+            font-size: 1.1rem;
+            font-weight: 500;
         }}
 
         /* Footer */
         footer {{
             text-align: center;
             padding-top: 3rem;
-            margin-top: 4rem;
-            border-top: 1px solid var(--border-color);
+            margin-top: 5rem;
+            border-top: 1px solid var(--surface-border);
             color: var(--text-secondary);
-            font-size: 0.85rem;
+            font-size: 0.88rem;
+            font-weight: 400;
+        }}
+
+        footer p {{
+            margin-bottom: 0.4rem;
         }}
 
         footer a {{
             color: var(--accent-gold);
             text-decoration: none;
             font-weight: 600;
+            transition: opacity 0.2s ease;
         }}
 
         footer a:hover {{
             text-decoration: underline;
+            opacity: 0.9;
         }}
 
         @media (max-width: 768px) {{
-            h1 {{ font-size: 2.2rem; }}
-            .controls {{ flex-direction: column; align-items: stretch; }}
+            h1 {{ font-size: 2.4rem; }}
+            .controls {{ flex-direction: column; align-items: stretch; padding: 1.2rem; }}
             .search-box {{ min-width: 100%; }}
-            .live-banner {{ flex-direction: column; text-align: center; }}
-            .live-match-teams {{ font-size: 1.25rem; }}
+            .live-banner {{ padding: 1.2rem; }}
+            .live-match-teams {{ font-size: 1.25rem; gap: 0.6rem; }}
+            .live-match-score {{ font-size: 1.4rem; padding: 0.2rem 0.6rem; }}
+            .live-banner-header {{ flex-direction: column; align-items: stretch; text-align: center; }}
+            .live-banner-action {{ justify-content: center; }}
         }}
     </style>
 </head>
@@ -980,78 +1181,50 @@ def generate_html(matches):
 
     <div class="container">
         <header>
-            <h1><i class="fa-solid fa-trophy"></i> Memorial Copa do Mundo 2026</h1>
+            <h1><i class="fa-solid fa-trophy" style="color: var(--accent-gold);"></i> Memorial Copa do Mundo 2026</h1>
             <p class="subtitle">Acompanhe os jogos ao vivo e assista aos melhores momentos das partidas transmitidas pela CazéTV</p>
-            <div class="last-update">
-                <i class="fa-solid fa-arrows-rotate"></i>
-                Atualizado em: <span>{now_str}</span>
+            <div class="header-meta">
+                <div class="last-update">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                    Sincronizado em: <span id="last-update-time">{now_str}</span>
+                </div>
+                <div class="sync-status" id="sync-indicator">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Monitoramento Ativo</span>
+                </div>
             </div>
         </header>
 
-        <!-- BANNER DE JOGOS AO VIVO -->
-        """
+        <!-- LIVE STREAM PLAYER BANNERS -->
+        <div id="live-banners-container" class="live-banners-section"></div>
         
-    if live_matches_banner:
-        for lm in live_matches_banner:
-            video_id = extract_video_id(lm['live_link'])
-            embed_url = f"https://www.youtube.com/embed/{video_id}?autoplay=1&mute=1" if video_id else "https://www.youtube.com/embed/live_stream?channel=UC4y3RCV7vvy151yUv8dF_Hw&autoplay=1&mute=1"
-            player_html = f"""
-            <div class="live-player-container" style="margin-top: 1.5rem; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; border: 1px solid rgba(255, 23, 68, 0.3); box-shadow: 0 10px 25px -10px rgba(255, 23, 68, 0.5);">
-                <iframe src="{embed_url}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-            </div>
-            """
-            
-            html_content += f"""
-            <div class="live-banner" style="flex-direction: column; align-items: stretch; gap: 1rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; width: 100%;">
-                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                        <div class="live-badge"><i class="fa-solid fa-satellite-dish"></i> Transmissão Ao Vivo</div>
-                        <div class="live-match-teams">
-                            <span>{lm['team_a']}</span>
-                            <span class="live-match-score">{lm['score_a']} x {lm['score_b']}</span>
-                            <span>{lm['team_b']}</span>
-                        </div>
-                    </div>
-                    <a href="{lm['live_link']}" target="_blank" class="live-banner-action">
-                        <i class="fa-brands fa-youtube"></i> Abrir no YouTube
-                    </a>
-                </div>
-                {player_html}
-            </div>
-            """
-            
-    html_content += f"""
-        <!-- Estatísticas Rápidas -->
+        <!-- Statistics Grid -->
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-val live">{live_count}</div>
+                <div class="stat-val live" id="stat-val-live">{live_count}</div>
                 <div class="stat-label">Jogos Ao Vivo</div>
             </div>
             <div class="stat-card">
-                <div class="stat-val finished">{finished_count}</div>
+                <div class="stat-val finished" id="stat-val-finished">{finished_count}</div>
                 <div class="stat-label">Jogos Finalizados</div>
             </div>
             <div class="stat-card">
-                <div class="stat-val scheduled">{scheduled_count}</div>
+                <div class="stat-val scheduled" id="stat-val-scheduled">{scheduled_count}</div>
                 <div class="stat-label">Jogos Agendados</div>
             </div>
         </div>
 
-        <!-- Painel de Controle -->
+        <!-- Controls Filter Panel -->
         <div class="controls">
             <div class="filter-buttons">
-                <button class="filter-btn active" onclick="filterStatus('all')">Todos os Jogos</button>
-                <button class="filter-btn" onclick="filterStatus('live')"><i class="fa-solid fa-satellite-dish" style="color: #ff1744;"></i> Ao Vivo</button>
-                <button class="filter-btn" onclick="filterStatus('finished')">Finalizados</button>
-                <button class="filter-btn" onclick="filterStatus('scheduled')">Agendados</button>
+                <button class="filter-btn active" id="btn-filter-all" onclick="filterStatus('all')">Todos os Jogos</button>
+                <button class="filter-btn" id="btn-filter-live" onclick="filterStatus('live')"><i class="fa-solid fa-satellite-dish" style="color: var(--accent-red);"></i> Ao Vivo</button>
+                <button class="filter-btn" id="btn-filter-finished" onclick="filterStatus('finished')">Finalizados</button>
+                <button class="filter-btn" id="btn-filter-scheduled" onclick="filterStatus('scheduled')">Agendados</button>
             </div>
-            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <div style="display: flex; gap: 0.6rem; flex-wrap: wrap; width: auto;" id="filters-right-group">
                 <select class="select-group" id="group-filter" onchange="filterGroup()">
-                    <option value="all">Todos os Grupos</option>
-                    <option value="Grupo A">Grupo A</option>
-                    <option value="Grupo B">Grupo B</option>
-                    <option value="Grupo C">Grupo C</option>
-                    <option value="Grupo D">Grupo D</option>
+                    {group_options_html}
                 </select>
                 <div class="search-box">
                     <i class="fa-solid fa-magnifying-glass"></i>
@@ -1062,117 +1235,7 @@ def generate_html(matches):
 
         <main>
             <div class="matches-grid" id="matches-grid">
-    """
-    
-    # Flags mapping helper
-    def get_flag(team_name):
-        # Mappings of team names to emoji flags
-        flags = {
-            "Brasil": "🇧🇷", "Japão": "🇯🇵", "Argentina": "🇦🇷", "Marrocos": "🇲🇦",
-            "Portugal": "🇵🇹", "Uzbequistão": "🇺🇿", "França": "🇫🇷", "Estados Unidos": "🇺🇸",
-            "Espanha": "🇪🇸", "Austrália": "🇦🇺", "Alemanha": "🇩🇪", "Camarões": "🇨🇲",
-            "Itália": "🇮🇹", "México": "🇲🇽", "Uruguai": "🇺🇾", "Coreia do Sul": "🇰🇷"
-        }
-        return flags.get(team_name, "🏳️")
-
-    if not matches:
-        html_content += """
-                <div class="empty-state">
-                    <i class="fa-solid fa-circle-question"></i>
-                    <p>Nenhuma partida cadastrada na base de dados.</p>
-                </div>
-        """
-    else:
-        for match in matches:
-            status_class = match['status'].lower().replace(" ", "-")
-            
-            # Status Badge HTML
-            if match['status'] == "Ao Vivo":
-                status_badge = '<div class="match-status-badge ao-vivo"><i class="fa-solid fa-satellite-dish"></i> Ao Vivo</div>'
-            elif match['status'] == "Finalizado":
-                status_badge = '<div class="match-status-badge finalizado">Finalizado</div>'
-            else:
-                status_badge = f'<div class="match-status-badge agendado">{match["time"]}</div>'
-                
-            # Formatting scores display
-            score_a_display = match['score_a'] if match['score_a'] is not None else "-"
-            score_b_display = match['score_b'] if match['score_b'] is not None else "-"
-            
-            # Determine score loss opacity classes
-            class_a = ""
-            class_b = ""
-            if match['status'] == "Finalizado":
-                if match['score_a'] < match['score_b']:
-                    class_a = "loser"
-                elif match['score_b'] < match['score_a']:
-                    class_b = "loser"
-                    
-            # Buttons HTML
-            action_buttons = ""
-            if match['status'] == "Ao Vivo":
-                video_id = extract_video_id(match['live_link'])
-                embed_url = f"https://www.youtube.com/embed/{video_id}?mute=1" if video_id else "https://www.youtube.com/embed/live_stream?channel=UC4y3RCV7vvy151yUv8dF_Hw&mute=1"
-                card_player_html = f"""
-                <div class="live-card-player" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 1rem; border: 1px solid rgba(255, 23, 68, 0.2);">
-                    <iframe src="{embed_url}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" frameborder="0" allowfullscreen></iframe>
-                </div>
-                """
-                action_buttons = f"""
-                    {card_player_html}
-                    <a href="{match['live_link']}" target="_blank" class="btn btn-live">
-                        <i class="fa-brands fa-youtube"></i> Abrir na CazéTV
-                    </a>
-                """
-            elif match['status'] == "Finalizado":
-                highlights_btn = f'<a href="{match["highlights_link"]}" target="_blank" class="btn btn-highlights"><i class="fa-solid fa-circle-play"></i> Melhores Momentos</a>' if match['highlights_link'] else '<button class="btn btn-disabled" disabled><i class="fa-solid fa-video-slash"></i> Sem Highlights</button>'
-                replay_btn = f'<a href="{match["replay_link"]}" target="_blank" class="btn btn-replay"><i class="fa-brands fa-youtube"></i> Replay do Jogo</a>' if match['replay_link'] else ''
-                action_buttons = f"""
-                    <div style="display: flex; flex-direction: column; gap: 0.5rem; width: 100%;">
-                        {highlights_btn}
-                        {replay_btn}
-                    </div>
-                """
-            else:
-                action_buttons = f"""
-                    <button class="btn btn-disabled" disabled>
-                        <i class="fa-solid fa-hourglass-start"></i> Aguardando Partida
-                    </button>
-                """
-                
-            html_content += f"""
-                <div class="match-card" data-status="{match['status'].lower()}" data-group="{match['group']}" data-team-a="{match['team_a'].lower()}" data-team-b="{match['team_b'].lower()}">
-                    <div>
-                        <div class="match-header">
-                            <span class="match-group">{match['group']}</span>
-                            <span>{match['date']}</span>
-                            {status_badge}
-                        </div>
-                        
-                        <div class="match-teams-score">
-                            <div class="team-row {class_a}">
-                                <div class="team-info">
-                                    <span class="team-flag">{get_flag(match['team_a'])}</span>
-                                    <span>{match['team_a']}</span>
-                                </div>
-                                <span class="team-score">{score_a_display}</span>
-                            </div>
-                            <div class="team-row {class_b}">
-                                <div class="team-info">
-                                    <span class="team-flag">{get_flag(match['team_b'])}</span>
-                                    <span>{match['team_b']}</span>
-                                </div>
-                                <span class="team-score">{score_b_display}</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="match-actions">
-                        {action_buttons}
-                    </div>
-                </div>
-            """
-            
-    html_content += """
+                <!-- Javascript will render cards dynamically here -->
             </div>
         </main>
 
@@ -1183,74 +1246,407 @@ def generate_html(matches):
     </div>
 
     <script>
+        // Baked-in matches database generated by python
+        let matchesData = {json_data_embedded};
+        
         let currentStatusFilter = 'all';
         let currentGroupFilter = 'all';
+        let currentActiveVideoId = null;
+        let countdownInterval = null;
 
-        function filterStatus(status) {
+        // Flag Mapping
+        const flags = {{
+            "Brasil": "🇧🇷", "Japão": "🇯🇵", "Argentina": "🇦🇷", "Marrocos": "🇲🇦",
+            "Portugal": "🇵🇹", "Uzbequistão": "🇺🇿", "França": "🇫🇷", "Estados Unidos": "🇺🇸",
+            "Espanha": "🇪🇸", "Austrália": "🇦🇺", "Alemanha": "🇩🇪", "Camarões": "🇨🇲",
+            "Itália": "🇮🇹", "México": "🇲🇽", "Uruguai": "🇺🇾", "Coreia do Sul": "🇰🇷",
+            "Inglaterra": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "Gana": "🇬🇭"
+        }};
+
+        // Extract YouTube ID from url
+        function getYouTubeId(url) {{
+            if (!url) return null;
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }}
+
+        // Parse date (DD/MM/YYYY) and time (HH:MM) to date object
+        function parseMatchDateTime(dateStr, timeStr) {{
+            const [day, month, year] = dateStr.split('/').map(Number);
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return new Date(year, month - 1, day, hours, minutes);
+        }}
+
+        // Calculate countdowns and badges
+        function getMatchTimeStatus(match) {{
+            if (match.status === 'Ao Vivo') {{
+                return {{
+                    badgeClass: 'ao-vivo',
+                    badgeText: '<i class="fa-solid fa-satellite-dish"></i> Ao Vivo',
+                    isLive: true
+                }};
+            }} else if (match.status === 'Finalizado') {{
+                return {{
+                    badgeClass: 'finalizado',
+                    badgeText: 'Finalizado',
+                    isLive: false
+                }};
+            }} else {{
+                // Scheduled
+                const matchTime = parseMatchDateTime(match.date, match.time);
+                const now = new Date();
+                const diffMs = matchTime - now;
+
+                if (diffMs > 0) {{
+                    const diffMin = Math.floor(diffMs / 60000);
+                    if (diffMin < 60) {{
+                        return {{
+                            badgeClass: 'agendado-em-breve',
+                            badgeText: `<i class="fa-regular fa-clock"></i> Começa em ${{diffMin}}m`,
+                            isLive: false
+                        }};
+                    }} else if (diffMin < 1440) {{
+                        const hours = Math.floor(diffMin / 60);
+                        const mins = diffMin % 60;
+                        return {{
+                            badgeClass: 'agendado-hoje',
+                            badgeText: `<i class="fa-regular fa-clock"></i> Começa em ${{hours}}h ${{mins}}m`,
+                            isLive: false
+                        }};
+                    }} else {{
+                        return {{
+                            badgeClass: 'agendado',
+                            badgeText: `<i class="fa-regular fa-calendar"></i> ${{match.time}}`,
+                            isLive: false
+                        }};
+                    }}
+                }} else {{
+                    // Match time has passed but it's not marked Live or Finished yet
+                    return {{
+                        badgeClass: 'agendado-decorrendo',
+                        badgeText: '<i class="fa-solid fa-hourglass-start"></i> Horário do Jogo (Aguardando Live)',
+                        isLive: false
+                    }};
+                }}
+            }}
+        }}
+
+        // Scroll to player banner
+        function playInBanner(matchId) {{
+            const match = matchesData.find(m => m.id === matchId);
+            if (!match || !match.live_link) return;
+            
+            // Set this match as primary by shifting matchesData
+            const matchIndex = matchesData.findIndex(m => m.id === matchId);
+            if (matchIndex > -1) {{
+                const [targetMatch] = matchesData.splice(matchIndex, 1);
+                matchesData.unshift(targetMatch);
+            }}
+            
+            updateLiveBanner();
+            
+            // Smooth scroll to top banner
+            window.scrollTo({{
+                top: 0,
+                behavior: 'smooth'
+            }});
+        }}
+
+        // Generate HTML for card
+        function getMatchCardHtml(match) {{
+            const statusInfo = getMatchTimeStatus(match);
+            const scoreA = match.score_a !== null ? match.score_a : '-';
+            const scoreB = match.score_b !== null ? match.score_b : '-';
+            const statusClass = match.status.toLowerCase().replace(' ', '-');
+            
+            // Determine winner/loser class for final matches
+            let classA = "";
+            let classB = "";
+            if (match.status === "Finalizado" && match.score_a !== null && match.score_b !== null) {{
+                if (match.score_a < match.score_b) {{
+                    classA = "loser";
+                }} else if (match.score_b < match.score_a) {{
+                    classB = "loser";
+                }}
+            }}
+            
+            // Actions block
+            let actionButtons = "";
+            if (match.status === "Ao Vivo") {{
+                actionButtons = `
+                    <div style="display: flex; gap: 0.5rem; width: 100%;">
+                        <button onclick="playInBanner(${{match.id}})" class="btn btn-watch-now">
+                            <i class="fa-solid fa-play"></i> Assistir no Portal
+                        </button>
+                        <a href="${{match.live_link || 'https://www.youtube.com/@CazeTV/live'}}" target="_blank" class="btn btn-live">
+                            <i class="fa-brands fa-youtube"></i> Abrir YouTube
+                        </a>
+                    </div>
+                `;
+            }} else if (match.status === "Finalizado") {{
+                const highlightsBtn = match.highlights_link 
+                    ? `<a href="${{match.highlights_link}}" target="_blank" class="btn btn-highlights"><i class="fa-solid fa-circle-play"></i> Melhores Momentos</a>` 
+                    : `<button class="btn btn-disabled" disabled><i class="fa-solid fa-video-slash"></i> Sem Highlights</button>`;
+                    
+                const replayBtn = match.replay_link 
+                    ? `<a href="${{match.replay_link}}" target="_blank" class="btn btn-replay"><i class="fa-solid fa-film"></i> Jogo Completo</a>` 
+                    : ``;
+                    
+                actionButtons = `
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem; width: 100%;">
+                        ${{highlightsBtn}}
+                        ${{replayBtn}}
+                    </div>
+                `;
+            }} else {{
+                // Scheduled
+                actionButtons = `
+                    <button class="btn btn-disabled" disabled>
+                        <i class="fa-solid fa-hourglass-start"></i> Aguardando Partida
+                    </button>
+                `;
+            }}
+            
+            return `
+                <div class="match-card" data-status-card="${{statusClass}}" data-id="${{match.id}}">
+                    <div>
+                        <div class="match-header">
+                            <span class="match-group">${{match.group}}</span>
+                            <span>${{match.date}}</span>
+                            <div class="match-status-badge ${{statusInfo.badgeClass}}">${{statusInfo.badgeText}}</div>
+                        </div>
+                        
+                        <div class="match-teams-score">
+                            <div class="team-row ${{classA}}">
+                                <div class="team-info">
+                                    <span class="team-flag">${{flags[match.team_a] || '🏳️'}}</span>
+                                    <span>${{match.team_a}}</span>
+                                </div>
+                                <span class="team-score">${{scoreA}}</span>
+                            </div>
+                            <div class="team-row ${{classB}}">
+                                <div class="team-info">
+                                    <span class="team-flag">${{flags[match.team_b] || '🏳️'}}</span>
+                                    <span>${{match.team_b}}</span>
+                                </div>
+                                <span class="team-score">${{scoreB}}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="match-actions">
+                        ${{actionButtons}}
+                    </div>
+                </div>
+            `;
+        }}
+
+        // Render Live Stream Banner
+        function updateLiveBanner() {{
+            const bannerContainer = document.getElementById('live-banners-container');
+            const liveMatches = matchesData.filter(m => m.status === 'Ao Vivo');
+            
+            if (liveMatches.length === 0) {{
+                bannerContainer.innerHTML = '';
+                currentActiveVideoId = null;
+                return;
+            }}
+            
+            const primaryLiveMatch = liveMatches[0];
+            const videoId = getYouTubeId(primaryLiveMatch.live_link);
+            
+            let bannerEl = document.getElementById('live-banner-el');
+            
+            if (!bannerEl) {{
+                bannerContainer.innerHTML = `
+                    <div class="live-banner" id="live-banner-el">
+                        <div class="live-banner-header">
+                            <div class="live-banner-info">
+                                <div class="live-badge"><i class="fa-solid fa-satellite-dish"></i> Transmissão Ao Vivo</div>
+                                <div class="live-match-teams">
+                                    <span id="banner-team-a"></span>
+                                    <span class="live-match-score" id="banner-score"></span>
+                                    <span id="banner-team-b"></span>
+                                </div>
+                            </div>
+                            <a href="#" id="banner-youtube-link" target="_blank" class="live-banner-action">
+                                <i class="fa-brands fa-youtube"></i> Abrir no YouTube
+                            </a>
+                        </div>
+                        <div id="banner-player-wrapper"></div>
+                    </div>
+                `;
+                bannerEl = document.getElementById('live-banner-el');
+            }}
+            
+            // Update details
+            document.getElementById('banner-team-a').innerHTML = `${{flags[primaryLiveMatch.team_a] || '🏳️'}} ${{primaryLiveMatch.team_a}}`;
+            document.getElementById('banner-team-b').innerHTML = `${{primaryLiveMatch.team_b}} ${{flags[primaryLiveMatch.team_b] || '🏳️'}}`;
+            
+            const scoreA = primaryLiveMatch.score_a !== null ? primaryLiveMatch.score_a : '-';
+            const scoreB = primaryLiveMatch.score_b !== null ? primaryLiveMatch.score_b : '-';
+            document.getElementById('banner-score').innerText = `${{scoreA}} x ${{scoreB}}`;
+            document.getElementById('banner-youtube-link').href = primaryLiveMatch.live_link || 'https://www.youtube.com/@CazeTV/live';
+            
+            // Update iframe safely
+            const playerWrapper = document.getElementById('banner-player-wrapper');
+            if (videoId !== currentActiveVideoId) {{
+                currentActiveVideoId = videoId;
+                if (videoId) {{
+                    const embedUrl = `https://www.youtube.com/embed/${{videoId}}?autoplay=1&mute=1`;
+                    playerWrapper.innerHTML = `
+                        <div class="live-player-container" style="margin-top: 1.5rem;">
+                            <iframe src="${{embedUrl}}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                        </div>
+                    `;
+                }} else {{
+                    const channelLiveEmbed = "https://www.youtube.com/embed/live_stream?channel=UC4y3RCV7vvy151yUv8dF_Hw&autoplay=1&mute=1";
+                    playerWrapper.innerHTML = `
+                        <div class="live-player-container" style="margin-top: 1.5rem;">
+                            <iframe src="${{channelLiveEmbed}}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                        </div>
+                    `;
+                }}
+            }}
+        }}
+
+        // Recalculate stats counters
+        function updateStats() {{
+            const liveCount = matchesData.filter(m => m.status === 'Ao Vivo').length;
+            const finishedCount = matchesData.filter(m => m.status === 'Finalizado').length;
+            const scheduledCount = matchesData.filter(m => m.status === 'Agendado').length;
+            
+            document.getElementById('stat-val-live').innerText = liveCount;
+            document.getElementById('stat-val-finished').innerText = finishedCount;
+            document.getElementById('stat-val-scheduled').innerText = scheduledCount;
+        }}
+
+        // Render main matches grid
+        function renderMatchesGrid() {{
+            const grid = document.getElementById('matches-grid');
+            const searchQuery = document.getElementById('search-input').value.toLowerCase();
+            
+            const filtered = matchesData.filter(match => {{
+                // Status Filter
+                let statusMatch = false;
+                if (currentStatusFilter === 'all') statusMatch = true;
+                else if (currentStatusFilter === 'live') statusMatch = match.status === 'Ao Vivo';
+                else if (currentStatusFilter === 'finished') statusMatch = match.status === 'Finalizado';
+                else if (currentStatusFilter === 'scheduled') statusMatch = match.status === 'Agendado';
+                
+                // Group Filter
+                let groupMatch = false;
+                if (currentGroupFilter === 'all') groupMatch = true;
+                else groupMatch = match.group === currentGroupFilter;
+                
+                // Search query
+                const searchMatch = match.team_a.toLowerCase().includes(searchQuery) || 
+                                    match.team_b.toLowerCase().includes(searchQuery);
+                                    
+                return statusMatch && groupMatch && searchMatch;
+            }});
+
+            if (filtered.length === 0) {{
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <p>Nenhuma partida encontrada.</p>
+                    </div>
+                `;
+                return;
+            }}
+
+            grid.innerHTML = filtered.map(getMatchCardHtml).join('');
+        }}
+
+        // Filter Quick Buttons
+        function filterStatus(status) {{
             currentStatusFilter = status;
             
-            // Toggle active status button
-            const buttons = document.querySelectorAll('.filter-btn');
-            buttons.forEach(btn => btn.classList.remove('active'));
+            // Toggle active class on buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {{
+                btn.classList.remove('active');
+            }});
             
-            const clickedBtn = Array.from(buttons).find(btn => {
-                const text = btn.textContent.toLowerCase();
-                return (status === 'all' && text.includes('todos')) ||
-                       (status === 'live' && text.includes('ao vivo')) ||
-                       (status === 'finished' && text.includes('finalizados')) ||
-                       (status === 'scheduled' && text.includes('agendados'));
-            });
-            if (clickedBtn) clickedBtn.classList.add('active');
+            const mapping = {{
+                'all': 'btn-filter-all',
+                'live': 'btn-filter-live',
+                'finished': 'btn-filter-finished',
+                'scheduled': 'btn-filter-scheduled'
+            }};
             
-            applyFilters();
-        }
+            const activeId = mapping[status];
+            if (activeId) {{
+                document.getElementById(activeId).classList.add('active');
+            }}
+            
+            renderMatchesGrid();
+        }}
 
-        function filterGroup() {
+        function filterGroup() {{
             currentGroupFilter = document.getElementById('group-filter').value;
-            applyFilters();
-        }
+            renderMatchesGrid();
+        }}
 
-        function applyFilters() {
-            const searchQuery = document.getElementById('search-input').value.toLowerCase();
-            const cards = document.querySelectorAll('.match-card');
+        function applyFilters() {{
+            renderMatchesGrid();
+        }}
 
-            cards.forEach(card => {
-                const status = card.getAttribute('data-status');
-                const group = card.getAttribute('data-group');
-                const teamA = card.getAttribute('data-team-a');
-                const teamB = card.getAttribute('data-team-b');
+        // Periodic Dynamic Data Polling (CORS friendly)
+        async function fetchUpdatedData() {{
+            const indicator = document.getElementById('sync-indicator');
+            indicator.classList.add('loading');
+            indicator.querySelector('span').innerText = 'Sincronizando...';
+            indicator.querySelector('i').className = 'fa-solid fa-arrows-rotate';
+            
+            try {{
+                // Request matches.json with a cache buster query parameter
+                const response = await fetch('matches.json?cb=' + Date.now());
+                if (response.ok) {{
+                    const newData = await response.json();
+                    if (JSON.stringify(newData) !== JSON.stringify(matchesData)) {{
+                        console.log('Dados atualizados detectados.');
+                        matchesData = newData;
+                        updateLiveBanner();
+                        updateStats();
+                        renderMatchesGrid();
+                    }}
+                    
+                    document.getElementById('last-update-time').innerText = new Date().toLocaleDateString('pt-BR') + ' às ' + new Date().toLocaleTimeString('pt-BR');
+                    
+                    indicator.classList.remove('loading');
+                    indicator.querySelector('span').innerText = 'Monitoramento Ativo';
+                    indicator.querySelector('i').className = 'fa-solid fa-circle-check';
+                }}
+            }} catch (error) {{
+                console.warn('Falha ao rodar atualização em tempo real (provável CORS ou offline):', error);
                 
-                // 1. Status Filter
-                let matchStatus = false;
-                if (currentStatusFilter === 'all') {
-                    matchStatus = true;
-                } else if (currentStatusFilter === 'live') {
-                    matchStatus = status === 'ao vivo';
-                } else if (currentStatusFilter === 'finished') {
-                    matchStatus = status === 'finalizado';
-                } else if (currentStatusFilter === 'scheduled') {
-                    matchStatus = status === 'agendado';
-                }
-                
-                // 2. Group Filter
-                let matchGroup = false;
-                if (currentGroupFilter === 'all') {
-                    matchGroup = true;
-                } else {
-                    matchGroup = group === currentGroupFilter;
-                }
-                
-                // 3. Search Filter
-                const matchSearch = teamA.includes(searchQuery) || teamB.includes(searchQuery);
-                
-                // Combine filters
-                if (matchStatus && matchGroup && matchSearch) {
-                    card.style.display = 'flex';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-        }
+                // Keep showing active monitor but with localized warning if CORS issue
+                indicator.classList.remove('loading');
+                indicator.querySelector('span').innerText = 'Modo Local Estático';
+                indicator.querySelector('i').className = 'fa-solid fa-circle-info';
+                indicator.querySelector('i').style.color = 'var(--accent-gold)';
+            }}
+        }}
+
+        // Initial setup and startup
+        function init() {{
+            // Render on start
+            updateLiveBanner();
+            updateStats();
+            renderMatchesGrid();
+            
+            // Set up local ticking countdowns (updates timers on scheduled cards every 10 seconds)
+            countdownInterval = setInterval(() => {{
+                renderMatchesGrid();
+            }}, 10000);
+            
+            // Polling every 20 seconds for matches.json changes
+            setInterval(fetchUpdatedData, 20000);
+        }}
+
+        window.onload = init;
     </script>
 </body>
 </html>

@@ -6,10 +6,10 @@
         "team_b": "Japão",
         "date": "22/06/2026",
         "time": "16:00",
-        "status": "Ao Vivo",
+        "status": "Finalizado",
         "score_a": 2,
         "score_b": 0,
-        "live_link": "https://www.youtube.com/watch?v=lCKmb37yEBk",
+        "live_link": null,
         "replay_link": "https://www.youtube.com/results?search_query=CazeTV+Brasil+Jap%C3%A3o+jogo+completo",
         "highlights_link": "https://www.youtube.com/results?search_query=CazeTV+Brasil+Jap%C3%A3o+melhores+momentos"
     },
@@ -34,12 +34,12 @@
         "team_b": "Uzbequistão",
         "date": "23/06/2026",
         "time": "13:00",
-        "status": "Ao Vivo",
-        "score_a": 1,
-        "score_b": 1,
-        "live_link": "https://www.youtube.com/watch?v=f1r-eS8WJLs",
-        "replay_link": "https://www.youtube.com/watch?v=vTnBwT_hN5o",
-        "highlights_link": "https://www.youtube.com/results?search_query=CazeTV+Portugal+Uzbequist%C3%A3o+melhores+momentos"
+        "status": "Finalizado",
+        "score_a": 5,
+        "score_b": 0,
+        "live_link": null,
+        "replay_link": "https://www.youtube.com/watch?v=L2nnCnVEahg",
+        "highlights_link": "https://www.youtube.com/watch?v=aJva_fZEpRc"
     },
     {
         "id": 4,
@@ -108,6 +108,20 @@
         "score_a": null,
         "score_b": null,
         "live_link": null,
+        "replay_link": null,
+        "highlights_link": null
+    },
+    {
+        "id": 9,
+        "group": "Grupo L",
+        "team_a": "Inglaterra",
+        "team_b": "Gana",
+        "date": "23/06/2026",
+        "time": "17:00",
+        "status": "Ao Vivo",
+        "score_a": null,
+        "score_b": null,
+        "live_link": "https://www.youtube.com/watch?v=vTnBwT_hN5o",
         "replay_link": null,
         "highlights_link": null
     }

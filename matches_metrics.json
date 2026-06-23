@@ -1,20 +1,20 @@
 {
-    "last_updated": "2026-06-23T18:56:43.586994",
+    "last_updated": "2026-06-23T16:25:47.207815",
     "tournament_summary": {
-        "total_matches_in_database": 8,
-        "matches_finished": 1,
-        "matches_currently_live": 2,
+        "total_matches_in_database": 9,
+        "matches_finished": 3,
+        "matches_currently_live": 1,
         "matches_scheduled": 5
     },
     "goals_statistics": {
-        "total_goals_scored": 7,
-        "average_goals_per_match": 2.33,
-        "highest_scoring_match": "Argentina 1 x 2 Marrocos"
+        "total_goals_scored": 10,
+        "average_goals_per_match": 2.5,
+        "highest_scoring_match": "Portugal 5 x 0 Uzbequistão"
     },
     "cazetv_coverage_metrics": {
-        "highlights_available_count": 1,
+        "highlights_available_count": 3,
         "highlights_coverage_percentage": "100.0%",
-        "full_replays_available_count": 1,
+        "full_replays_available_count": 3,
         "full_replays_coverage_percentage": "100.0%"
     }
 }
