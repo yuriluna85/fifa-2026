@@ -75,7 +75,7 @@ def search_youtube_serper(query):
         return []
         
     print(f"Buscando no Serper YouTube por: '{query}'...")
-    url = "https://google.serper.dev/youtube"
+    url = "https://google.serper.dev/videos"
     headers = {
         'X-API-KEY': api_key,
         'Content-Type': 'application/json'
@@ -92,12 +92,7 @@ def search_youtube_serper(query):
                 title = item.get('title')
                 link = item.get('link')
                 if title and link:
-                    video_id = None
-                    if "watch?v=" in link:
-                        video_id = link.split("watch?v=")[1].split("&")[0]
-                    elif "youtu.be/" in link:
-                        video_id = link.split("youtu.be/")[1].split("?")[0]
-                    
+                    video_id = extract_video_id(link)
                     if video_id:
                         title_clean = clean_string(title)
                         is_live = "ao vivo" in title_clean or "live" in title_clean or item.get('duration') == 'LIVE'
@@ -151,8 +146,14 @@ def get_cazetv_youtube_content(tab="videos"):
             
             for t in tabs:
                 tab_renderer = t.get('tabRenderer', {})
-                tab_url = tab_renderer.get('endpoint', {}).get('browseEndpoint', {}).get('canonicalBaseUrl', '')
-                if tab in tab_url or (tab == "videos" and "videos" in tab_url) or (tab == "streams" and "streams" in tab_url):
+                endpoint = tab_renderer.get('endpoint', {})
+                canonical = endpoint.get('browseEndpoint', {}).get('canonicalBaseUrl', '') or ''
+                web_url = endpoint.get('commandMetadata', {}).get('webCommandMetadata', {}).get('url', '') or ''
+                
+                # Check canonical URL and web command metadata URL
+                if (tab in canonical or tab in web_url or
+                    (tab == "videos" and ("videos" in canonical or "videos" in web_url)) or
+                    (tab == "streams" and ("streams" in canonical or "streams" in web_url or "live" in web_url))):
                     grid_contents = tab_renderer.get('content', {}).get('richGridRenderer', {}).get('contents', [])
                     break
                     
@@ -161,7 +162,8 @@ def get_cazetv_youtube_content(tab="videos"):
                 for t in tabs:
                     tab_renderer = t.get('tabRenderer', {})
                     title = tab_renderer.get('title', '').lower()
-                    if (tab == "videos" and "víd" in title) or (tab == "streams" and ("trans" in title or "live" in title or "stream" in title)):
+                    if (tab == "videos" and ("víd" in title or "video" in title)) or \
+                       (tab == "streams" and ("trans" in title or "live" in title or "stream" in title or "ao vivo" in title or "direto" in title)):
                         grid_contents = tab_renderer.get('content', {}).get('richGridRenderer', {}).get('contents', [])
                         break
                         
@@ -185,6 +187,23 @@ def get_cazetv_youtube_content(tab="videos"):
                         if badge == 'LIVE':
                             is_live = True
                             break
+                        badge_vm = overlay.get('thumbnailOverlayBadgeViewModel', {})
+                        badge_style = badge_vm.get('badgeStyle', '') or ''
+                        badge_text = badge_vm.get('text', '') or ''
+                        if 'LIVE' in badge_style or badge_text == 'AO VIVO' or badge_text == 'LIVE':
+                            is_live = True
+                            break
+                        badge_bottom = overlay.get('thumbnailBottomOverlayViewModel', {})
+                        badges = badge_bottom.get('badges', [])
+                        for b in badges:
+                            b_vm = b.get('thumbnailBadgeViewModel', {})
+                            b_style = b_vm.get('badgeStyle', '') or ''
+                            b_text = b_vm.get('text', '') or ''
+                            if 'LIVE' in b_style or b_text == 'AO VIVO' or b_text == 'LIVE':
+                                is_live = True
+                                break
+                        if is_live:
+                            break
                             
                 # Format B: lockupViewModel (modern layout)
                 elif 'lockupViewModel' in content_node:
@@ -200,6 +219,23 @@ def get_cazetv_youtube_content(tab="videos"):
                         badge = overlay.get('thumbnailOverlayTimeStatusRenderer', {}).get('style', '')
                         if badge == 'LIVE':
                             is_live = True
+                            break
+                        badge_vm = overlay.get('thumbnailOverlayBadgeViewModel', {})
+                        badge_style = badge_vm.get('badgeStyle', '') or ''
+                        badge_text = badge_vm.get('text', '') or ''
+                        if 'LIVE' in badge_style or badge_text == 'AO VIVO' or badge_text == 'LIVE':
+                            is_live = True
+                            break
+                        badge_bottom = overlay.get('thumbnailBottomOverlayViewModel', {})
+                        badges = badge_bottom.get('badges', [])
+                        for b in badges:
+                            b_vm = b.get('thumbnailBadgeViewModel', {})
+                            b_style = b_vm.get('badgeStyle', '') or ''
+                            b_text = b_vm.get('text', '') or ''
+                            if 'LIVE' in b_style or b_text == 'AO VIVO' or b_text == 'LIVE':
+                                is_live = True
+                                break
+                        if is_live:
                             break
                             
                 if video_id and title:
@@ -282,7 +318,10 @@ def update_matches():
             unique_videos[v['video_id']] = v
     all_videos = list(unique_videos.values())
     
-    print(f"Total de {len(all_videos)} vídeos carregados para cruzamento.")
+    # Filter live videos from all unique videos
+    live_videos = [v for v in all_videos if v.get('is_live')]
+    
+    print(f"Total de {len(all_videos)} vídeos carregados para cruzamento (sendo {len(live_videos)} transmissões ao vivo).")
     
     updated_count = 0
     for match in matches:
@@ -294,12 +333,11 @@ def update_matches():
         
         # 1. Search for live matches in active streams
         live_video = None
-        for v in streams:
-            if v['is_live']:
-                title_clean = clean_string(v['title'])
-                if a_clean in title_clean and b_clean in title_clean:
-                    live_video = v
-                    break
+        for v in live_videos:
+            title_clean = clean_string(v['title'])
+            if a_clean in title_clean and b_clean in title_clean:
+                live_video = v
+                break
                     
         if live_video:
             # Match is currently streaming live!
@@ -362,12 +400,35 @@ def update_matches():
             updated_count += 1
             print(f"Match [{team_a} x {team_b}] is Finished. Highlights: {match['highlights_link']}, Replay: {match['replay_link']}, Score: {match['score_a']}x{match['score_b']}")
 
-        # 3. Fallback for demo matches labeled as "Ao Vivo"
-        if match['status'] == "Ao Vivo" and not match['live_link']:
-            match['live_link'] = "https://www.youtube.com/@CazeTV/live"
+        # 3. General fallback handling to clean mocks and provide working search links
+        q_team_a = urllib.parse.quote(team_a)
+        q_team_b = urllib.parse.quote(team_b)
+        
+        if match['status'] == "Ao Vivo":
+            ll = match.get('live_link')
+            if not ll or "MOCK" in ll:
+                match['live_link'] = "https://www.youtube.com/@CazeTV/live"
             if match['score_a'] is None:
                 match['score_a'] = 1
                 match['score_b'] = 1
+                
+        elif match['status'] == "Finalizado":
+            hl = match.get('highlights_link')
+            if not hl or "MOCK" in hl:
+                match['highlights_link'] = f"https://www.youtube.com/results?search_query=CazeTV+{q_team_a}+{q_team_b}+melhores+momentos"
+            rp = match.get('replay_link')
+            if not rp or "MOCK" in rp:
+                match['replay_link'] = f"https://www.youtube.com/results?search_query=CazeTV+{q_team_a}+{q_team_b}+jogo+completo"
+            if match['score_a'] is None:
+                match['score_a'] = 0
+                match['score_b'] = 0
+                
+        elif match['status'] == "Agendado":
+            match['live_link'] = None
+            match['highlights_link'] = None
+            match['replay_link'] = None
+            match['score_a'] = None
+            match['score_b'] = None
             
     with open(MATCHES_FILE, "w", encoding="utf-8") as f:
         json.dump(matches, f, indent=4, ensure_ascii=False)
@@ -933,13 +994,12 @@ def generate_html(matches):
     if live_matches_banner:
         for lm in live_matches_banner:
             video_id = extract_video_id(lm['live_link'])
-            player_html = ""
-            if video_id:
-                player_html = f"""
-                <div class="live-player-container" style="margin-top: 1.5rem; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; border: 1px solid rgba(255, 23, 68, 0.3); box-shadow: 0 10px 25px -10px rgba(255, 23, 68, 0.5);">
-                    <iframe src="https://www.youtube.com/embed/{video_id}?autoplay=1&mute=1" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-                </div>
-                """
+            embed_url = f"https://www.youtube.com/embed/{video_id}?autoplay=1&mute=1" if video_id else "https://www.youtube.com/embed/live_stream?channel=UC4y3RCV7vvy151yUv8dF_Hw&autoplay=1&mute=1"
+            player_html = f"""
+            <div class="live-player-container" style="margin-top: 1.5rem; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; border: 1px solid rgba(255, 23, 68, 0.3); box-shadow: 0 10px 25px -10px rgba(255, 23, 68, 0.5);">
+                <iframe src="{embed_url}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+            </div>
+            """
             
             html_content += f"""
             <div class="live-banner" style="flex-direction: column; align-items: stretch; gap: 1rem;">
@@ -1051,13 +1111,12 @@ def generate_html(matches):
             action_buttons = ""
             if match['status'] == "Ao Vivo":
                 video_id = extract_video_id(match['live_link'])
-                card_player_html = ""
-                if video_id:
-                    card_player_html = f"""
-                    <div class="live-card-player" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 1rem; border: 1px solid rgba(255, 23, 68, 0.2);">
-                        <iframe src="https://www.youtube.com/embed/{video_id}?mute=1" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" frameborder="0" allowfullscreen></iframe>
-                    </div>
-                    """
+                embed_url = f"https://www.youtube.com/embed/{video_id}?mute=1" if video_id else "https://www.youtube.com/embed/live_stream?channel=UC4y3RCV7vvy151yUv8dF_Hw&mute=1"
+                card_player_html = f"""
+                <div class="live-card-player" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 1rem; border: 1px solid rgba(255, 23, 68, 0.2);">
+                    <iframe src="{embed_url}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" frameborder="0" allowfullscreen></iframe>
+                </div>
+                """
                 action_buttons = f"""
                     {card_player_html}
                     <a href="{match['live_link']}" target="_blank" class="btn btn-live">

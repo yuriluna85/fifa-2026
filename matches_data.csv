@@ -1,7 +1,7 @@
 Match ID,Group,Team A,Team B,Date,Time,Status,Score A,Score B,Live Link,Highlights Link,Replay Link
-1,Grupo A,Brasil,Japão,22/06/2026,16:00,Finalizado,2,0,,https://www.youtube.com/watch?v=HIGHLIGHTS_MOCK_BR_JP,https://www.youtube.com/watch?v=REPLAY_MOCK_BR_JP
-2,Grupo A,Argentina,Marrocos,22/06/2026,19:00,Finalizado,1,2,,https://www.youtube.com/watch?v=HIGHLIGHTS_MOCK_AR_MA,https://www.youtube.com/watch?v=REPLAY_MOCK_AR_MA
-3,Grupo B,Portugal,Uzbequistão,23/06/2026,13:00,Ao Vivo,1,1,https://www.youtube.com/watch?v=LIVE_MOCK_PT_UZ,,
+1,Grupo A,Brasil,Japão,22/06/2026,16:00,Finalizado,2,0,,https://www.youtube.com/results?search_query=CazeTV+Brasil+Jap%C3%A3o+melhores+momentos,https://www.youtube.com/results?search_query=CazeTV+Brasil+Jap%C3%A3o+jogo+completo
+2,Grupo A,Argentina,Marrocos,22/06/2026,19:00,Finalizado,1,2,,https://www.youtube.com/results?search_query=CazeTV+Argentina+Marrocos+melhores+momentos,https://www.youtube.com/results?search_query=CazeTV+Argentina+Marrocos+jogo+completo
+3,Grupo B,Portugal,Uzbequistão,23/06/2026,13:00,Ao Vivo,1,1,https://www.youtube.com/watch?v=vTnBwT_hN5o,https://www.youtube.com/results?search_query=CazeTV+Portugal+Uzbequist%C3%A3o+melhores+momentos,https://www.youtube.com/watch?v=vTnBwT_hN5o
 4,Grupo B,França,Estados Unidos,23/06/2026,16:00,Agendado,,,,,
 5,Grupo C,Espanha,Austrália,23/06/2026,19:00,Agendado,,,,,
 6,Grupo C,Alemanha,Camarões,24/06/2026,13:00,Agendado,,,,,
