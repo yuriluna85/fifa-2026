@@ -76,12 +76,12 @@
         "team_b": "Gana",
         "date": "23/06/2026",
         "time": "17:00",
-        "status": "Ao Vivo",
+        "status": "Finalizado",
         "score_a": 1,
         "score_b": 1,
-        "live_link": "https://www.youtube.com/watch?v=vTnBwT_hN5o",
-        "replay_link": null,
-        "highlights_link": null
+        "live_link": null,
+        "replay_link": "https://www.youtube.com/watch?v=ZThEBtVRnec",
+        "highlights_link": "https://www.youtube.com/@CazeTV/search?query=Inglaterra+Gana+melhores+momentos"
     },
     {
         "id": 7,
