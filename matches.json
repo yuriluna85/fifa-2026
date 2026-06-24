@@ -77,8 +77,8 @@
         "date": "23/06/2026",
         "time": "17:00",
         "status": "Finalizado",
-        "score_a": 1,
-        "score_b": 1,
+        "score_a": null,
+        "score_b": null,
         "live_link": null,
         "replay_link": "https://www.youtube.com/watch?v=ZThEBtVRnec",
         "highlights_link": "https://www.youtube.com/@CazeTV/search?query=Inglaterra+Gana+melhores+momentos"
@@ -94,7 +94,7 @@
         "score_a": 0,
         "score_b": 0,
         "live_link": null,
-        "replay_link": "https://www.youtube.com/watch?v=WUvxr2xCpjQ",
+        "replay_link": "https://www.youtube.com/watch?v=bh8YVux5Pkg",
         "highlights_link": "https://www.youtube.com/@CazeTV/search?query=Panam%C3%A1+Cro%C3%A1cia+melhores+momentos"
     },
     {
@@ -105,11 +105,11 @@
         "date": "23/06/2026",
         "time": "23:00",
         "status": "Finalizado",
-        "score_a": 0,
+        "score_a": 1,
         "score_b": 0,
         "live_link": null,
-        "replay_link": "https://www.youtube.com/watch?v=o0PHBI9QAdY",
-        "highlights_link": "https://www.youtube.com/@CazeTV/search?query=Col%C3%B4mbia+RD%20Congo+melhores+momentos"
+        "replay_link": "https://www.youtube.com/watch?v=CnEFPgTbIB0",
+        "highlights_link": "https://www.youtube.com/watch?v=N0EP6mSFErY"
     },
     {
         "id": 9,
@@ -118,12 +118,12 @@
         "team_b": "Canadá",
         "date": "24/06/2026",
         "time": "22:00",
-        "status": "Finalizado",
-        "score_a": 0,
-        "score_b": 0,
+        "status": "Agendado",
+        "score_a": null,
+        "score_b": null,
         "live_link": null,
-        "replay_link": "https://www.youtube.com/watch?v=ioH5k4ss_tY",
-        "highlights_link": "https://www.youtube.com/@CazeTV/search?query=Su%C3%AD%C3%A7a+Canad%C3%A1+melhores+momentos"
+        "replay_link": null,
+        "highlights_link": null
     },
     {
         "id": 10,
@@ -146,12 +146,12 @@
         "team_b": "Escócia",
         "date": "24/06/2026",
         "time": "22:00",
-        "status": "Finalizado",
-        "score_a": 0,
-        "score_b": 0,
+        "status": "Agendado",
+        "score_a": null,
+        "score_b": null,
         "live_link": null,
-        "replay_link": "https://www.youtube.com/watch?v=dxYTTxhgVNU",
-        "highlights_link": "https://www.youtube.com/@CazeTV/search?query=Brasil+Esc%C3%B3cia+melhores+momentos"
+        "replay_link": null,
+        "highlights_link": null
     },
     {
         "id": 12,
@@ -160,12 +160,12 @@
         "team_b": "Haiti",
         "date": "24/06/2026",
         "time": "19:00",
-        "status": "Finalizado",
-        "score_a": 0,
-        "score_b": 0,
+        "status": "Agendado",
+        "score_a": null,
+        "score_b": null,
         "live_link": null,
-        "replay_link": "https://www.youtube.com/watch?v=Cy-JKocMCf8",
-        "highlights_link": "https://www.youtube.com/@CazeTV/search?query=Marrocos+Haiti+melhores+momentos"
+        "replay_link": null,
+        "highlights_link": null
     },
     {
         "id": 13,
@@ -174,12 +174,12 @@
         "team_b": "México",
         "date": "24/06/2026",
         "time": "22:00",
-        "status": "Finalizado",
-        "score_a": 0,
-        "score_b": 0,
+        "status": "Agendado",
+        "score_a": null,
+        "score_b": null,
         "live_link": null,
-        "replay_link": "https://www.youtube.com/watch?v=D0947hff-G0",
-        "highlights_link": "https://www.youtube.com/@CazeTV/search?query=Ch%C3%A9quia+M%C3%A9xico+melhores+momentos"
+        "replay_link": null,
+        "highlights_link": null
     },
     {
         "id": 14,
@@ -188,12 +188,12 @@
         "team_b": "Coreia do Sul",
         "date": "24/06/2026",
         "time": "19:00",
-        "status": "Finalizado",
-        "score_a": 0,
-        "score_b": 0,
+        "status": "Agendado",
+        "score_a": null,
+        "score_b": null,
         "live_link": null,
-        "replay_link": "https://www.youtube.com/watch?v=cFu_iI4h1to",
-        "highlights_link": "https://www.youtube.com/@CazeTV/search?query=%C3%81frica%20do%20Sul+Coreia%20do%20Sul+melhores+momentos"
+        "replay_link": null,
+        "highlights_link": null
     },
     {
         "id": 15,
@@ -202,12 +202,12 @@
         "team_b": "Costa do Marfim",
         "date": "25/06/2026",
         "time": "16:00",
-        "status": "Finalizado",
-        "score_a": 0,
-        "score_b": 0,
+        "status": "Agendado",
+        "score_a": null,
+        "score_b": null,
         "live_link": null,
-        "replay_link": "https://www.youtube.com/watch?v=yiq5VPpo34U",
-        "highlights_link": "https://www.youtube.com/@CazeTV/search?query=Cura%C3%A7ao+Costa%20do%20Marfim+melhores+momentos"
+        "replay_link": null,
+        "highlights_link": null
     },
     {
         "id": 16,
@@ -216,12 +216,12 @@
         "team_b": "Alemanha",
         "date": "25/06/2026",
         "time": "16:00",
-        "status": "Finalizado",
-        "score_a": 0,
-        "score_b": 0,
+        "status": "Agendado",
+        "score_a": null,
+        "score_b": null,
         "live_link": null,
-        "replay_link": "https://www.youtube.com/watch?v=DeIPppohrnQ",
-        "highlights_link": "https://www.youtube.com/@CazeTV/search?query=Equador+Alemanha+melhores+momentos"
+        "replay_link": null,
+        "highlights_link": null
     },
     {
         "id": 17,
@@ -230,12 +230,12 @@
         "team_b": "Suécia",
         "date": "25/06/2026",
         "time": "19:00",
-        "status": "Finalizado",
-        "score_a": 0,
-        "score_b": 0,
+        "status": "Agendado",
+        "score_a": null,
+        "score_b": null,
         "live_link": null,
-        "replay_link": "https://www.youtube.com/watch?v=qCcrzzz3bVk",
-        "highlights_link": "https://www.youtube.com/@CazeTV/search?query=Jap%C3%A3o+Su%C3%A9cia+melhores+momentos"
+        "replay_link": null,
+        "highlights_link": null
     },
     {
         "id": 18,
@@ -244,12 +244,12 @@
         "team_b": "Holanda",
         "date": "25/06/2026",
         "time": "19:00",
-        "status": "Finalizado",
-        "score_a": 0,
-        "score_b": 0,
+        "status": "Agendado",
+        "score_a": null,
+        "score_b": null,
         "live_link": null,
-        "replay_link": "https://www.youtube.com/watch?v=meWCRh7LE-0",
-        "highlights_link": "https://www.youtube.com/@CazeTV/search?query=Tun%C3%ADsia+Holanda+melhores+momentos"
+        "replay_link": null,
+        "highlights_link": null
     },
     {
         "id": 19,
@@ -258,12 +258,12 @@
         "team_b": "Estados Unidos",
         "date": "25/06/2026",
         "time": "22:00",
-        "status": "Finalizado",
-        "score_a": 0,
-        "score_b": 0,
+        "status": "Agendado",
+        "score_a": null,
+        "score_b": null,
         "live_link": null,
-        "replay_link": "https://www.youtube.com/watch?v=cAl4PErpiuE",
-        "highlights_link": "https://www.youtube.com/@CazeTV/search?query=Turquia+Estados%20Unidos+melhores+momentos"
+        "replay_link": null,
+        "highlights_link": null
     },
     {
         "id": 20,
@@ -272,11 +272,11 @@
         "team_b": "Austrália",
         "date": "25/06/2026",
         "time": "22:00",
-        "status": "Finalizado",
-        "score_a": 0,
-        "score_b": 0,
+        "status": "Agendado",
+        "score_a": null,
+        "score_b": null,
         "live_link": null,
-        "replay_link": "https://www.youtube.com/watch?v=YUNznGUccxc",
-        "highlights_link": "https://www.youtube.com/@CazeTV/search?query=Paraguai+Austr%C3%A1lia+melhores+momentos"
+        "replay_link": null,
+        "highlights_link": null
     }
 ]

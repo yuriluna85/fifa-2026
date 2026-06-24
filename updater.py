@@ -352,6 +352,9 @@ def update_matches():
     print(f"Total de {len(all_videos)} vídeos carregados para cruzamento (sendo {len(live_videos)} transmissões ao vivo).")
     
     updated_count = 0
+    now = datetime.now()
+    from datetime import timedelta
+    
     for match in matches:
         team_a = match['team_a']
         team_b = match['team_b']
@@ -359,7 +362,27 @@ def update_matches():
         a_clean = clean_string(team_a)
         b_clean = clean_string(team_b)
         
-        # 1. Search for live matches in active streams
+        # Parse match scheduled datetime
+        match_dt = None
+        try:
+            match_dt = datetime.strptime(f"{match['date']} {match['time']}", "%d/%m/%Y %H:%M")
+        except Exception as e:
+            print(f"Erro ao parsear data/hora para {team_a} x {team_b}: {e}")
+            
+        # 1. Enforce 'Agendado' for future matches (scheduled starting time is > 30 minutes in the future)
+        if match_dt and now < match_dt - timedelta(minutes=30):
+            if match['status'] != "Agendado" or match['score_a'] is not None or match['score_b'] is not None or match['live_link'] is not None or match['highlights_link'] is not None or match['replay_link'] is not None:
+                print(f"Revertendo jogo futuro [{team_a} x {team_b}] para 'Agendado'.")
+                match['status'] = "Agendado"
+                match['score_a'] = None
+                match['score_b'] = None
+                match['live_link'] = None
+                match['highlights_link'] = None
+                match['replay_link'] = None
+                updated_count += 1
+            continue
+            
+        # 2. Search for live matches in active streams
         live_video = None
         for v in live_videos:
             title_clean = clean_string(v['title'])
@@ -372,22 +395,41 @@ def update_matches():
                     new_is_pre = any(x in title_clean for x in ["pre-jogo", "pre jogo", "esquenta"])
                     if current_is_pre and not new_is_pre:
                         live_video = v
-
-                    
+                        
         if live_video:
             # Match is currently streaming live!
-            match['status'] = "Ao Vivo"
-            match['live_link'] = live_video['url']
+            if match['status'] != "Ao Vivo" or match.get('live_link') != live_video['url']:
+                match['status'] = "Ao Vivo"
+                match['live_link'] = live_video['url']
+                match['highlights_link'] = None
+                match['replay_link'] = None
+                updated_count += 1
             # Attempt to parse current live score if written in title
             sa, sb = extract_score_from_title(live_video['title'], team_a, team_b)
             if sa is not None and sb is not None:
-                match['score_a'] = sa
-                match['score_b'] = sb
-            updated_count += 1
+                if match.get('score_a') != sa or match.get('score_b') != sb:
+                    match['score_a'] = sa
+                    match['score_b'] = sb
+                    updated_count += 1
             print(f"Match [{team_a} x {team_b}] is LIVE! URL: {live_video['url']}")
             continue
             
-        # 2. Search for finished match videos (highlights/replays)
+        # 3. If no live video is found, but the match time has NOT yet passed 2 hours
+        # (meaning the match is either about to start or currently in progress, but no live stream is detected)
+        # It cannot be marked as "Finalizado" yet. Revert to "Agendado".
+        if match_dt and now < match_dt + timedelta(hours=2):
+            if match['status'] != "Agendado" or match['score_a'] is not None or match['score_b'] is not None or match['live_link'] is not None or match['highlights_link'] is not None or match['replay_link'] is not None:
+                print(f"Jogo em andamento ou prestes a começar [{team_a} x {team_b}] sem live ativa. Definindo como 'Agendado'.")
+                match['status'] = "Agendado"
+                match['score_a'] = None
+                match['score_b'] = None
+                match['live_link'] = None
+                match['highlights_link'] = None
+                match['replay_link'] = None
+                updated_count += 1
+            continue
+
+        # 4. Search for finished match videos (highlights/replays) for past games (at least 2 hours since kickoff)
         highlights_video = None
         replay_video = None
         
@@ -408,34 +450,38 @@ def update_matches():
                         
         # If highlights or replays found, the match is Finished
         if highlights_video or replay_video:
-            match['status'] = "Finalizado"
-            match['live_link'] = None
-            
+            if match['status'] != "Finalizado":
+                match['status'] = "Finalizado"
+                match['live_link'] = None
+                updated_count += 1
+                
             if highlights_video:
-                match['highlights_link'] = highlights_video['url']
+                if match.get('highlights_link') != highlights_video['url']:
+                    match['highlights_link'] = highlights_video['url']
+                    updated_count += 1
                 # Parse final score from highlights title
                 sa, sb = extract_score_from_title(highlights_video['title'], team_a, team_b)
                 if sa is not None and sb is not None:
-                    match['score_a'] = sa
-                    match['score_b'] = sb
-                    
+                    if match.get('score_a') != sa or match.get('score_b') != sb:
+                        match['score_a'] = sa
+                        match['score_b'] = sb
+                        updated_count += 1
+                        
             if replay_video:
-                match['replay_link'] = replay_video['url']
+                if match.get('replay_link') != replay_video['url']:
+                    match['replay_link'] = replay_video['url']
+                    updated_count += 1
                 if match['score_a'] is None:  # Fallback score parser
                     sa, sb = extract_score_from_title(replay_video['title'], team_a, team_b)
                     if sa is not None and sb is not None:
-                        match['score_a'] = sa
-                        match['score_b'] = sb
-                        
-            # If still no score parsed but match is finished, set default mock scores if empty
-            if match['score_a'] is None:
-                match['score_a'] = 0
-                match['score_b'] = 0
-                
-            updated_count += 1
+                        if match.get('score_a') != sa or match.get('score_b') != sb:
+                            match['score_a'] = sa
+                            match['score_b'] = sb
+                            updated_count += 1
+                            
             print(f"Match [{team_a} x {team_b}] is Finished. Highlights: {match['highlights_link']}, Replay: {match['replay_link']}, Score: {match['score_a']}x{match['score_b']}")
 
-        # 3. General fallback handling to clean mocks and provide working search links
+        # 5. General fallback handling to clean mocks and provide working search links
         q_team_a = urllib.parse.quote(team_a)
         q_team_b = urllib.parse.quote(team_b)
         
@@ -443,9 +489,7 @@ def update_matches():
             ll = match.get('live_link')
             if not ll or "MOCK" in ll:
                 match['live_link'] = "https://www.youtube.com/@CazeTV/live"
-            if match['score_a'] is None:
-                match['score_a'] = 1
-                match['score_b'] = 1
+            # Do NOT default score to mock value anymore
                 
         elif match['status'] == "Finalizado":
             hl = match.get('highlights_link')
@@ -454,9 +498,7 @@ def update_matches():
             rp = match.get('replay_link')
             if not rp or "MOCK" in rp or "youtube.com/results" in rp:
                 match['replay_link'] = f"https://www.youtube.com/@CazeTV/search?query={q_team_a}+{q_team_b}+jogo+completo"
-            if match['score_a'] is None:
-                match['score_a'] = 0
-                match['score_b'] = 0
+            # Do NOT default score to 0-0 anymore
                 
         elif match['status'] == "Agendado":
             match['live_link'] = None
